@@ -124,6 +124,7 @@ typedef struct {
 } instruction;
 
 #define OPCD(INST) (INST)->opcd
+#define FORM(INST) (INST)->form
 
 #define ENCODING(INST) (INST)->encoding
 
@@ -147,6 +148,7 @@ typedef struct {
 #define BIN_BT(V) (BIN_RT(V))
 #define BIN_BA(V) (BIN_RA(V))
 #define BIN_BB(V) (BIN_RB(V))
+#define BIN_XL_XO(V) (BIN_X_XO(V))
 
 #define BIN_D(V) (BIN_REG((V), 16, 32))
 
