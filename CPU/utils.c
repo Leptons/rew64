@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -14,7 +15,9 @@ void *xrealloc(void *mem, int size){
 
 void *xmalloc(int size){
 	void *x = (void*) malloc(size);
-	if(x==0); // TODO: error
+	if(x==0){
+		fprintf(stderr, "Cannot allocate memory\n");
+	}
 	return x;
 }
 
