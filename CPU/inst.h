@@ -8,7 +8,7 @@ typedef enum {
 	D_FORM,
 	DS_FORM,
 	// DQ_FORM,
-	X_FORM,
+	X_FORM, // or XO_FORM
 	// XS_FORM,
 	// XO_FORM
 	XL_FORM
@@ -161,6 +161,13 @@ typedef struct {
 
 
 instruction *decode_inst(word val);
+void load_i_form_inst(instruction *inst, int *li, int *aa, int *lk);
+void load_d_form_inst(instruction *inst, int *rt, int *ra, int *d);
+void load_xl_form_inst(instruction *inst, int *bt, int *ba, int *bb, int *xo, int *lk);
+void load_sc_form_inst(instruction *inst, int *lev, int *aa);
+void load_ds_form_inst(instruction *inst, int *rt, int *ra, int *ds, int *xo);
+void load_x_form_inst(instruction *inst, int *rt, int *ra, int *rb, int *xo, int *rc);
+void load_b_form_inst(instruction *inst, int *bo, int *bi, int *bd, int *aa, int *lk);
 void free_inst(instruction *inst);
 
 #endif // __INST_H__

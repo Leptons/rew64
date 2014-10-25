@@ -2,3 +2,4 @@
 /unittests/**
 /info/**
 /rew64/obj/**
+*.o

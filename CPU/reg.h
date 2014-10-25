@@ -20,6 +20,8 @@ extern dword GPR[GPR_LENGTH];
 
 extern double *FPR;
 
+
+// AltiVec
 #define VR_LENGTH 32
 #define VSR_LENGTH 64
 

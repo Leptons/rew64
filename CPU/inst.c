@@ -118,6 +118,53 @@ static instruction *st_bad_inst(instruction *inst, word val){
 	return inst;
 }
 
+void load_i_form_inst(instruction *inst, int *li, int *aa, int *lk){
+	*li = inst->inst.i.li;
+	*aa = inst->inst.i.aa;
+	*lk = inst->inst.i.lk;
+}
+
+void load_d_form_inst(instruction *inst, int *rt, int *ra, int *d){
+	*rt = inst->inst.d.rt;
+	*ra = inst->inst.d.ra;
+	*d = inst->inst.d.d;
+}
+
+void load_xl_form_inst(instruction *inst, int *bt, int *ba, int *bb, int *xo, int *lk){
+	*bt = inst->inst.xl.bt;
+	*ba = inst->inst.xl.ba;
+	*bb = inst->inst.xl.bb;
+	*xo = inst->inst.xl.xo;
+	*lk = inst->inst.xl.lk;
+}
+
+void load_sc_form_inst(instruction *inst, int *lev, int *aa){
+	*lev = inst->inst.sc.lev;
+	*aa = inst->inst.sc.aa;
+}
+
+void load_ds_form_inst(instruction *inst, int *rt, int *ra, int *ds, int *xo){
+	*rt = inst->inst.ds.rt;
+	*ra = inst->inst.ds.ra;
+	*ds = inst->inst.ds.ds;
+	*xo = inst->inst.ds.xo;
+}
+
+void load_x_form_inst(instruction *inst, int *rt, int *ra, int *rb, int *xo, int *rc){
+	*rt = inst->inst.x.rt;
+	*ra = inst->inst.x.ra;
+	*rb = inst->inst.x.rb;
+	*xo = inst->inst.x.xo;
+	*rc = inst->inst.x.rc;
+}
+
+void load_b_form_inst(instruction *inst, int *bo, int *bi, int *bd, int *aa, int *lk){
+	*bo = inst->inst.b.bo;
+	*bi = inst->inst.b.bi;
+	*bd = inst->inst.b.bd;
+	*aa = inst->inst.b.aa;
+	*lk = inst->inst.b.lk;
+}
 
 void free_inst(instruction *inst){
 	free(inst);
