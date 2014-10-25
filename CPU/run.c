@@ -27,16 +27,32 @@ static void init(mem_addr initial_NIP){
 }
 
 #define XO_OE 0x0200 // 1<<9
+#define LO_MASK 0x0000ffff
+#define HI_MASK 0xffff0000
+#define IEA(V) (mode_64bit?(V):((V)&LO_MASK))
+#define EXTS(V, S) ((int64)(V) << (64-(S)) >> (64-(S)))
 
 static bool exec(){
 	instruction *inst = read_mem_inst(NIP);
 	bool invalid = false;
+
+	mem_addr CIA = NIP;
+	mem_addr NIA = CIA+4;
+
 	switch(FORM(inst)){
 		case I_FORM:
 			{
 				int li, aa, lk;
 				load_i_form_inst(inst, &li, &aa, &lk);
-				// Branch (TODO)
+				// Branch
+				if(aa){
+					NIA = IEA(EXTS(li<<4, 26)); // TODO: verify working correctly
+				} else {
+					NIA = IEA(CIA + EXTS(li<<4, 26));
+				}
+				if(lk){
+					LR = CIA+4;
+				}
 				break;
 			}
 		case B_FORM:
@@ -101,28 +117,56 @@ static bool exec(){
 				switch(OPCD(inst)){
 					// Load
 					case 34:
-						// Load Byte and Zero (TODO)
+						// Load Byte and Zero
+						GPR[rt] = read_mem_8(GPR[ra]+EXTS(d, 16));
 						break;
 					case 35:
-						// Load Byte and Zero Update (TODO)
+						// Load Byte and Zero Update
+						if(ra==0 || ra==rt){
+							invalid = true;
+							break;
+						}
+						GPR[ra] += EXTS(d, 16);
+						GPR[rt] = read_mem_8(GPR[ra]);
 						break;
 					case 40:
-						// Load Halfword and Zero (TODO)
+						// Load Halfword and Zero
+						GPR[rt] = read_mem_16(GPR[ra]+EXTS(d, 16));
 						break;
 					case 41:
-						// Load Halfword and Zero with Update (TODO)
+						// Load Halfword and Zero with Update
+						if(ra==0 || ra==rt){
+							invalid = true;
+							break;
+						}
+						GPR[ra] += EXTS(d, 16);
+						GPR[rt] = read_mem_16(GPR[ra]);
 						break;
 					case 42:
-						// Load Halfword Algebraic (TODO)
+						// Load Halfword Algebraic
+						GPR[rt] = EXTS(read_mem_16(GPR[ra]+EXTS(d, 16)), 16);
 						break;
 					case 43:
-						// Load Halfword Algebraic with Update (TODO)
+						// Load Halfword Algebraic with Update
+						if(ra==0 || ra==rt){
+							invalid = true;
+							break;
+						}
+						GPR[ra] += EXTS(d, 16);
+						GPR[rt] = EXTS(read_mem_16(GPR[ra]), 16);
 						break;
 					case 32:
-						// Load Word and Zero (TODO)
+						// Load Word and Zero
+						GPR[rt] = read_mem_32(GPR[ra]+EXTS(d, 16));
 						break;
 					case 33:
-						// Load Word and Zero with Update(TODO)
+						// Load Word and Zero with Update
+						if(ra==0 || ra==rt){
+							invalid = true;
+							break;
+						}
+						GPR[ra] += EXTS(d, 16);
+						GPR[rt] = read_mem_32(GPR[ra]);
 						break;
 
 					// Store
@@ -238,13 +282,21 @@ static bool exec(){
 					case 58:
 						switch(xo){
 							case 2:
-								// Load Word Algebraic (TODO)
+								// Load Word Algebraic
+								GPR[rt] = EXTS(read_mem_32(GPR[ra]+EXTS(ds<<2, 16)), 32);
 								break;
 							case 0:
-								// Load Doubleword (TODO)
+								// Load Doubleword
+								GPR[rt] = read_mem_64(GPR[ra]+EXTS(ds<<2, 16));
 								break;
 							case 1:
-								// Load Doubleword with Update (TODO)
+								// Load Doubleword with Update
+								if(ra==0 || ra==rt){
+									invalid = true;
+									break;
+								}
+								GPR[ra] += EXTS(ds<<2, 16);
+								GPR[rt] = read_mem_64(GPR[ra]);
 								break;
 
 							default:
@@ -407,6 +459,33 @@ static bool exec(){
 					case 412:
 						// OR with Complement (TODO)
 						break;
+					case 954:
+						// Extend Sign Byte (TODO)
+						break;
+					case 922:
+						// Extend Sign Halfword (TODO)
+						break;
+					case 26:
+						// Count Leading Zeros Word (TODO)
+						break;
+					case 508:
+						// Compare Bytes (TODO)
+						break;
+					case 186:
+						// Parity Doubleword (TODO)
+						break;
+					case 154:
+						// Parity Word (TODO)
+						break;
+					case 986:
+						// Extend Sign Word (TODO)
+						break;
+					case 122:
+						// Population Count Bytes (TODO)
+						break;
+					case 58:
+						// Count Leading Zeros Doubleword (TODO)
+						break;
 
 					// XO_FORM
 					default:
@@ -501,12 +580,31 @@ static bool exec(){
 				break;
 			}
 
+		// Rotate
+		case M_FORM:
+			{
+				switch(OPCD(inst)){
+					case 21:
+						// Rotate Left Word Immediate then AND (TODO)
+						break;
+					case 23:
+						// Rotate Left Word then AND with Mask (TODO)
+						break;
+					case 20:
+						// Rotate Left Word Immediate then AND with Mask (TODO)
+						break;
+				}
+				break;
+			}
+
 		default:
 			{
 				invalid = true;
 				break;
 			}
 	}
+
+	NIP = NIA;
 
 	return !invalid;
 }

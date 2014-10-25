@@ -11,18 +11,17 @@ typedef enum {
 	X_FORM, // or XO_FORM
 	// XS_FORM,
 	// XO_FORM
-	XL_FORM
+	XL_FORM,
+	M_FORM
 } inst_form;
 
 typedef struct {
-	int opcd; // unused
 	int li;
 	int aa;
 	int lk;
 } i_form_inst;
 
 typedef struct {
-	int opcd;
 	int bo;
 	int bi;
 	int bd;
@@ -31,7 +30,6 @@ typedef struct {
 } b_form_inst;
 
 typedef struct {
-	int opcd;
 	int lev;
 	int aa;
 } sc_form_inst;
@@ -44,7 +42,6 @@ typedef struct {
 } d_form_inst;
 
 typedef struct {
-	int opcd;
 	int rt;
 	int ra;
 	int ds;
@@ -53,7 +50,6 @@ typedef struct {
 
 /*
 typedef struct {
-	int opcd;
 	int rt;
 	int ra;
 	int dq;
@@ -61,7 +57,6 @@ typedef struct {
 */
 
 typedef struct {
-	int opcd;
 	int rt;
 	int ra;
 	int rb;
@@ -71,7 +66,6 @@ typedef struct {
 
 /*
 typedef struct {
-	int opcd;
 	int rt;
 	int ra;
 	int rb;
@@ -83,7 +77,6 @@ typedef struct {
 
 /*
 typedef struct {
-	int opcd;
 	int rt;
 	int ra;
 	int rb;
@@ -102,6 +95,14 @@ typedef struct {
 	int lk;
 } xl_form_inst;
 
+typedef struct {
+	int rs;
+	int ra;
+	int rb;
+	int mb;
+	int me;
+	int rc;
+} m_form_inst;
 
 typedef struct {
 	int opcd;
@@ -116,6 +117,7 @@ typedef struct {
 		// xs_form_inst xs;
 		// xo_form_inst xo;
 		xl_form_inst xl;
+		m_form_inst m;
 	} inst;
 
 	word encoding;
@@ -159,6 +161,10 @@ typedef struct {
 #define BIN_BI(V) (BIN_RA(V))
 #define BIN_BD(V) (BIN_DS(V))
 
+#define BIN_RS(V) (BIN_RT(V))
+#define BIN_MB(V) (BIN_REG((V), 21, 26))
+#define BIN_ME(V) (BIN_REG((V), 26, 31))
+
 
 instruction *decode_inst(word val);
 void load_i_form_inst(instruction *inst, int *li, int *aa, int *lk);
@@ -168,6 +174,7 @@ void load_sc_form_inst(instruction *inst, int *lev, int *aa);
 void load_ds_form_inst(instruction *inst, int *rt, int *ra, int *ds, int *xo);
 void load_x_form_inst(instruction *inst, int *rt, int *ra, int *rb, int *xo, int *rc);
 void load_b_form_inst(instruction *inst, int *bo, int *bi, int *bd, int *aa, int *lk);
+void load_m_form_inst(instruction *inst, int *rs, int *ra, int *rb, int *mb, int *me, int *rc);
 void free_inst(instruction *inst);
 
 #endif // __INST_H__

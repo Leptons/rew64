@@ -9,12 +9,17 @@
 
 
 // registers
-dword CR, LR, CTR, XER;
+word CR;
+dword LR, CTR, XER;
 mem_addr NIP;
 dword GPR[GPR_LENGTH];
 double *FPR;
+/*
 qword *VR;
 qword *VSR;
+*/
+
+bool mode_64bit = true;
 
 // storage
 instruction **text_seg;

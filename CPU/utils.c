@@ -3,6 +3,9 @@
 #include <string.h>
 
 #include "rew64.h"
+#include "reg.h"
+#include "inst.h"
+#include "mem.h"
 #include "utils.h"
 
 void *xrealloc(void *mem, int size){

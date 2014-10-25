@@ -12,6 +12,7 @@ static instruction *st_xl_form_inst(instruction *inst, word val);
 static instruction *st_x_form_inst(instruction *inst, word val);
 static instruction *st_d_form_inst(instruction *inst, word val);
 static instruction *st_ds_form_inst(instruction *inst, word val);
+static instruction *st_m_form_inst(instruction *inst, word val);
 static instruction *st_bad_inst(instruction *inst, word val);
 
 
@@ -35,6 +36,8 @@ instruction *decode_inst(word val){
 		return st_x_form_inst(inst, val);
 	} else if(DS_FORM_INST_L <= opcd && opcd < DS_FORM_INST_R){ // DS_FORM
 		return st_ds_form_inst(inst, val);
+	} else if(M_FORM_INST_L <= opcd && opcd < M_FORM_INST_R){
+		return st_m_form_inst(inst, val);
 	} else {
 		inst->opcd = 0;
 		return st_bad_inst(inst, val);
@@ -83,6 +86,7 @@ static instruction *st_xl_form_inst(instruction *inst, word val){
 
 	return inst;
 }
+
 static instruction *st_x_form_inst(instruction *inst, word val){
 	inst->inst.x.rt = BIN_RT(val);
 	inst->inst.x.ra = BIN_RA(val);
@@ -104,6 +108,7 @@ static instruction *st_d_form_inst(instruction *inst, word val){
 
 	return inst;
 }
+
 static instruction *st_ds_form_inst(instruction *inst, word val){
 	inst->inst.ds.rt = BIN_RT(val);
 	inst->inst.ds.ra = BIN_RA(val);
@@ -113,6 +118,19 @@ static instruction *st_ds_form_inst(instruction *inst, word val){
 	inst->form = DS_FORM;
 	return inst;
 }
+
+static instruction *st_m_form_inst(instruction *inst, word val){
+	inst->inst.m.rs = BIN_RS(val);
+	inst->inst.m.ra = BIN_RA(val);
+	inst->inst.m.rb = BIN_RB(val);
+	inst->inst.m.mb = BIN_MB(val);
+	inst->inst.m.me = BIN_ME(val);
+	inst->inst.m.rc = BIN_RC(val);
+
+	inst->form = M_FORM;
+	return inst;
+}
+
 static instruction *st_bad_inst(instruction *inst, word val){
 	fprintf(stderr, "Cannot create instruction\n");
 	return inst;
@@ -164,6 +182,14 @@ void load_b_form_inst(instruction *inst, int *bo, int *bi, int *bd, int *aa, int
 	*bd = inst->inst.b.bd;
 	*aa = inst->inst.b.aa;
 	*lk = inst->inst.b.lk;
+}
+void load_m_form_inst(instruction *inst, int *rs, int *ra, int *rb, int *mb, int *me, int *rc){
+	*rs = inst->inst.m.rs;
+	*ra = inst->inst.m.ra;
+	*rb = inst->inst.m.rb;
+	*mb = inst->inst.m.mb;
+	*me = inst->inst.m.me;
+	*rc = inst->inst.m.rc;
 }
 
 void free_inst(instruction *inst){
