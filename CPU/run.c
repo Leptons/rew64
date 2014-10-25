@@ -34,93 +34,17 @@ static bool exec(){
 	switch(FORM(inst)){
 		case I_FORM:
 			{
+				int li, aa, lk;
+				load_i_form_inst(inst, &li, &aa, &lk);
 				// Branch (TODO)
 				break;
 			}
-
-		case D_FORM:
+		case B_FORM:
 			{
-				switch(OPCD(inst)){
-					case 18:
-						// Branch (TODO)
-						break;
-					case 16:
-						// Branch Conditional (TODO)
-						break;
+				int bo, bi, bd, aa, lk;
+				load_b_form_inst(inst, &bo, &bi, &bd, &aa, &lk);
+				// Branch Conditional (TODO)
 
-						// Load
-					case 34:
-						// Load Byte and Zero (TODO)
-						break;
-					case 35:
-						// Load Byte and Zero Update (TODO)
-						break;
-					case 40:
-						// Load Halfword and Zero (TODO)
-						break;
-					case 41:
-						// Load Halfword and Zero with Update (TODO)
-						break;
-					case 42:
-						// Load Halfword Algebraic (TODO)
-						break;
-					case 43:
-						// Load Halfword Algebraic with Update (TODO)
-						break;
-					case 32:
-						// Load Word and Zero (TODO)
-						break;
-					case 33:
-						// Load Word and Zero with Update(TODO)
-						break;
-
-						// Store
-					case 38:
-						// Store Byte (TODO)
-						break;
-					case 39:
-						// Store Byte (TODO)
-						break;
-					case 44:
-						// Store Halfword (TODO)
-						break;
-					case 45:
-						// Store Halfword with Update (TODO)
-						break;
-					case 36:
-						// Store Word (TODO)
-						break;
-					case 37:
-						// Store Word with Update (TODO)
-						break;
-
-						// Load/Store Multiple Word
-					case 46:
-						// Load Multiple Word (TODO)
-						break;
-					case 47:
-						// Store Multiple Word (TODO)
-						break;
-
-						// Add
-					case 14:
-						// Add Immediate (TODO)
-					case 15:
-						// Add Immediate Shifted (TODO)
-					case 12:
-						// Add Immediate Carrying (TODO)
-						break;
-					case 13:
-						// Add Immediate Carrying and Record (TODO)
-						break;
-					case 8:
-						// Subtract From Immediate carrying (TODO)
-						break;
-
-					default:
-						invalid = true;
-						break;
-				}
 				break;
 			}
 
@@ -169,12 +93,136 @@ static bool exec(){
 				break;
 			}
 
+
+		case D_FORM:
+			{
+				int rt, ra, d;
+				load_d_form_inst(inst, &rt, &ra, &d);
+				switch(OPCD(inst)){
+					// Load
+					case 34:
+						// Load Byte and Zero (TODO)
+						break;
+					case 35:
+						// Load Byte and Zero Update (TODO)
+						break;
+					case 40:
+						// Load Halfword and Zero (TODO)
+						break;
+					case 41:
+						// Load Halfword and Zero with Update (TODO)
+						break;
+					case 42:
+						// Load Halfword Algebraic (TODO)
+						break;
+					case 43:
+						// Load Halfword Algebraic with Update (TODO)
+						break;
+					case 32:
+						// Load Word and Zero (TODO)
+						break;
+					case 33:
+						// Load Word and Zero with Update(TODO)
+						break;
+
+					// Store
+					case 38:
+						// Store Byte (TODO)
+						break;
+					case 39:
+						// Store Byte (TODO)
+						break;
+					case 44:
+						// Store Halfword (TODO)
+						break;
+					case 45:
+						// Store Halfword with Update (TODO)
+						break;
+					case 36:
+						// Store Word (TODO)
+						break;
+					case 37:
+						// Store Word with Update (TODO)
+						break;
+
+						// Load/Store Multiple Word
+					case 46:
+						// Load Multiple Word (TODO)
+						break;
+					case 47:
+						// Store Multiple Word (TODO)
+						break;
+
+					// Arithmetric Operations
+					case 14:
+						// Add Immediate (TODO)
+					case 15:
+						// Add Immediate Shifted (TODO)
+					case 12:
+						// Add Immediate Carrying (TODO)
+						break;
+					case 13:
+						// Add Immediate Carrying and Record (TODO)
+						break;
+					case 8:
+						// Subtract From Immediate carrying (TODO)
+						break;
+					case 7:
+						// Multiply Low Immediate (TODO)
+						break;
+
+					// Compare
+					case 11:
+						// Compare Immediate (TODO)
+						break;
+					case 10:
+						// Compare Logical Immediate (TODO)
+						break;
+
+					// Trap
+					case 3:
+						// Trap Word Immediate (TODO)
+						break;
+					case 2:
+						// Trap Doubleword Immediate (TODO)
+						break;
+
+					// Logical Operations
+					case 28:
+						// AND Immediate (TODO)
+						break;
+					case 29:
+						// And Immediate Shifted (TODO)
+						break;
+					case 24:
+						// OR Immediate (TODO)
+						break;
+					case 25:
+						// OR Immediate Shifted (TODO)
+						break;
+					case 26:
+						// XOR Immediate (TODO)
+						break;
+					case 27:
+						// XOR Immediate Shifted (TODO)
+						break;
+
+					default:
+						invalid = true;
+						break;
+				}
+				break;
+			}
+
+
 		// System Call
 		case SC_FORM:
 			{
-				if(inst->inst.sc.aa == 1){
+				int lev, aa;
+				load_sc_form_inst(inst, &lev, &aa);
+				if(aa == 1){
 					// System Call (TODO)
-					// syscall(inst->inst.sc.lev);
+					// syscall(lev);
 				} else {
 					invalid = true;
 				}
@@ -184,9 +232,11 @@ static bool exec(){
 
 		case DS_FORM:
 			{
+				int rt, ra, ds, xo;
+				load_ds_form_inst(inst, &rt, &ra, &ds, &xo);
 				switch(OPCD(inst)){
 					case 58:
-						switch(inst->inst.ds.xo){
+						switch(xo){
 							case 2:
 								// Load Word Algebraic (TODO)
 								break;
@@ -203,7 +253,7 @@ static bool exec(){
 						}
 						break;
 					case 62:
-						switch(inst->inst.ds.xo){
+						switch(xo){
 							case 0:
 								// Store Doubleword (TODO)
 								break;
@@ -316,6 +366,47 @@ static bool exec(){
 					case 661:
 						// Store String Word Indexed (TODO)
 						break;
+						
+					// Compare
+					case 0:
+						// Compare (TODO)
+						break;
+					case 32:
+						// Compare Logical (TODO)
+						break;
+
+					// Trap
+					case 4:
+						// Trap Word (TODO)
+						break;
+					case 68:
+						// Trap Doubleword (TODO)
+
+					// Logical Operations
+					case 28:
+						// AND (TODO)
+						break;
+					case 444:
+						// OR (TODO)
+						break;
+					case 316:
+						// XOR (TODO)
+						break;
+					case 476:
+						// NAND (TODO)
+						break;
+					case 124:
+						// NOR (TODO)
+						break;
+					case 284:
+						// Equivalent (TODO)
+						break;
+					case 60:
+						// AND with Complement (TODO)
+						break;
+					case 412:
+						// OR with Complement (TODO)
+						break;
 
 					// XO_FORM
 					default:
@@ -323,7 +414,7 @@ static bool exec(){
 							int oe = xo & XO_OE;
 							xo &= ~XO_OE;
 							switch(xo){
-								// Add
+								// Arithmetric Operations
 								case 266:
 								case 266+XO_OE: // TODO: remove these lines after tested
 									// Add (TODO)
@@ -368,17 +459,45 @@ static bool exec(){
 								case 104+XO_OE:
 									// Negate (TODO)
 									break;
+								case 235:
+									// Multiply Low Word (TODO)
+									break;
+								case 75:
+									// Multiply High Word (TODO)
+									break;
+								case 11:
+									// Multiply High Word Unsigned (TODO)
+									break;
+								case 491:
+									// Divide Word (TODO)
+									break;
+								case 259:
+									// Divide Word Unsigned (TODO)
+									break;
+								case 233:
+									// Divide Low Doubleword (TODO)
+									break;
+								case 73:
+									// Divide High Doubleword (TODO)
+									break;
+								case 9:
+									// Divide High Doubleword Unsigned (TODO)
+									break;
+								case 489:
+									// Divide Doubleword (TODO)
+									break;
+								case 457:
+									// Divide Doubleword Unsigned (TODO)
+									break;
 
 								default:
+									// A_FORM (TODO)
+									/* Interger Select
+									 */
 									invalid = true;
 							}
 						}
 				}
-				break;
-			}
-
-		case B_FORM:
-			{
 				break;
 			}
 
