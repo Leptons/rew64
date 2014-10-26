@@ -9,7 +9,7 @@
 
 
 // registers
-word CR;
+char CR[CR_LENGTH];
 dword LR, CTR, XER;
 mem_addr NIP;
 dword R[R_LENGTH];

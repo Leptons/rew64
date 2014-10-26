@@ -8,6 +8,11 @@
 
 static void init(mem_addr initial_NIP);
 static bool exec(void);
+static void update_CR(int r, int val);
+static void update_SO_OV(int64 sum, int64 a, int64 b);
+static void update3_SO_OV(int64 sum, int64 a, int64 b, int64 c);
+static void update_CA(int64 sum, int64 a, int64 b);
+static void update3_CA(int64 sum, int64 a, int64 b, int64 c);
 
 bool run_rew64(mem_addr initial_NIP, int steps, bool display){
 	init(initial_NIP);
@@ -24,15 +29,25 @@ bool run_rew64(mem_addr initial_NIP, int steps, bool display){
 static void init(mem_addr initial_NIP){
 	NIP = initial_NIP;
 	// TODO: initialize registers and flags here
+	XER = 0;
 }
 
 
 #define XO_OE 0x0200 // 1<<9
+#define LT 0x8
+#define GT 0x4
+#define EQ 0x2
+#define IS_SO ((XER>>31)&1)
+#define IS_OV ((XER>>30)&1)
+#define IS_CA ((XER>>29)&1)
+#define SET_SO(V) (XER^=(!!(V)^IS_SO)<<31)
+#define SET_OV(V) (XER^=(!!(V)^IS_OV)<<30)
+#define SET_CA(V) (XER^=(!!(V)^IS_CA)<<29)
 #define LO_MASK 0x0000ffff
 #define HI_MASK 0xffff0000
 #define BT(I) (1LL<<(63-(I)))
 #define IEA(V) (mode_64bit?(V):((V)&LO_MASK))
-#define EXTS(V, S) ((int64)(V) << (64-(S)) >> (64-(S)))
+#define EXTS(V, S) ((int64)(V) << (64-(S)) >> (64-(S))) // TODO: fix (currently depending on implementation)
 
 static bool exec(){
 	instruction *inst = read_mem_inst(NIP);
@@ -131,6 +146,7 @@ static bool exec(){
 				int rt, ra, d;
 				load_d_form_inst(inst, &rt, &ra, &d);
 				int rs = rt;
+				int si = d;
 				switch(OPCD(inst)){
 					// Load
 					case 34:
@@ -251,17 +267,39 @@ static bool exec(){
 
 					// Arithmetric Operations
 					case 14:
-						// Add Immediate (TODO)
+						// Add Immediate
+						R[rt] = (ra==0?0:R[ra])+EXTS(si, 16);
 					case 15:
-						// Add Immediate Shifted (TODO)
+						// Add Immediate Shifted
+						R[rt] = (ra==0?0:R[ra])+EXTS(si<<16, 32);
 					case 12:
-						// Add Immediate Carrying (TODO)
-						break;
+						// Add Immediate Carrying
+						{
+							int64 a = (ra==0?0:R[ra]), b = EXTS(si, 16);
+							int64 t = a + b;
+							update_CA(t, a, b);
+							R[rt] = t;
+							break;
+						}
 					case 13:
-						// Add Immediate Carrying and Record (TODO)
-						break;
+						// Add Immediate Carrying and Record
+						{
+							int64 a = (ra==0?0:R[ra]), b = EXTS(si, 16);
+							int64 t = a + b;
+							update_CA(t, a, b);
+							update_CR(0, t);
+							R[rt] = t;
+							break;
+						}
 					case 8:
-						// Subtract From Immediate carrying (TODO)
+						// Subtract From Immediate carrying (TODO: fix (-R[ra] may be bug))
+						{
+							int64 a = (ra==0?0:-R[ra]), b = EXTS(si, 16);
+							int64 t = a + b;
+							update_CA(t, a, b);
+							R[rt] = t;
+							break;
+						}
 						break;
 					case 7:
 						// Multiply Low Immediate (TODO)
@@ -701,48 +739,177 @@ static bool exec(){
 								// Arithmetric Operations
 								case 266:
 								case 266+XO_OE: // TODO: remove these lines after tested
-									// Add (TODO)
-									break;
+									// Add
+									{
+										int64 a = R[ra], b = R[rb];
+										int64 t = a + b;
+										R[rt] = t;
+										if(oe){
+											update_SO_OV(t, a, b);
+										}
+										if(rc){
+											update_CR(0, t);
+										}
+										break;
+									}
 								case 40:
 								case 40+XO_OE:
-									// Subtract From (TODO)
-									break;
+									// Subtract From
+									{
+										int64 a = -R[ra], b = R[rb];
+										int64 t = a + b;
+										R[rt] = t;
+										if(oe){
+											update_SO_OV(t, a, b);
+										}
+										if(rc){
+											update_CR(0, t);
+										}
+										break;
+									}
 								case 10:
 								case 10+XO_OE:
-									// Add Carrying (TODO)
-									break;
+									// Add Carrying
+									{
+										int64 a = R[ra], b = R[rb];
+										int64 t = a + b;
+										R[rt] = t;
+										update_CA(t, a, b);
+										if(oe){
+											update_SO_OV(t, a, b);
+										}
+										if(rc){
+											update_CR(0, t);
+										}
+										break;
+									}
 								case 8:
 								case 8+XO_OE:
-									// Subtract From Carrying (TODO)
-									break;
+									// Subtract From Carrying
+									{
+										int64 a = -R[ra], b = R[rb];
+										int64 t = a + b;
+										R[rt] = t;
+										update_CA(t, a, b);
+										if(oe){
+											update_SO_OV(t, a, b);
+										}
+										if(rc){
+											update_CR(0, t);
+										}
+										break;
+									}
 								case 138:
 								case 138+XO_OE:
 									// Add Extended (TODO)
-									break;
+									{
+										int64 a = R[ra], b = R[rb], c = IS_CA;
+										int64 t = a + b + c;
+										R[rt] = t;
+										update3_CA(t, a, b, c);
+										if(oe){
+											update3_SO_OV(t, a, b, c);
+										}
+										if(rc){
+											update_CR(0, t);
+										}
+										break;
+									}
 								case 136:
 								case 136+XO_OE:
 									// Subtract From Extended (TODO)
-									break;
+									{
+										int64 a = -R[ra], b = R[rb], c = IS_CA;
+										int64 t = a + b + c;
+										R[rt] = t;
+										update3_CA(t, a, b, c);
+										if(oe){
+											update3_SO_OV(t, a, b, c);
+										}
+										if(rc){
+											update_CR(0, t);
+										}
+										break;
+									}
 								case 234:
 								case 234+XO_OE:
-									// Add to Minus One Extended (TODO)
-									break;
+									// Add to Minus One Extended
+									{
+										int64 a = R[ra], b = IS_CA - 1;
+										int64 t = a + b;
+										R[rt] = t;
+										update_CA(t, a, b);
+										if(oe){
+											update_SO_OV(t, a, b);
+										}
+										if(rc){
+											update_CR(0, t);
+										}
+										break;
+									}
 								case 232:
 								case 232+XO_OE:
-									// Subtract From Minus One Extended (TODO)
-									break;
+									// Subtract From Minus One Extended
+									{
+										int64 a = -R[ra], b = IS_CA - 1;
+										int64 t = a + b;
+										R[rt] = t;
+										update_CA(t, a, b);
+										if(oe){
+											update_SO_OV(t, a, b);
+										}
+										if(rc){
+											update_CR(0, t);
+										}
+										break;
+									}
 								case 202:
 								case 202+XO_OE:
-									// Add to Zero Extended (TODO)
-									break;
+									// Add to Zero Extended
+									{
+										int64 a = R[ra], b = IS_CA;
+										int64 t = a + b;
+										R[rt] = t;
+										update_CA(t, a, b);
+										if(oe){
+											update_SO_OV(t, a, b);
+										}
+										if(rc){
+											update_CR(0, t);
+										}
+										break;
+									}
 								case 200:
 								case 200+XO_OE:
-									// Subtract From Zero Extended (TODO)
-									break;
+									// Subtract From Zero Extended
+									{
+										int64 a = -R[ra], b = IS_CA;
+										int64 t = a + b;
+										R[rt] = t;
+										update_CA(t, a, b);
+										if(oe){
+											update_SO_OV(t, a, b);
+										}
+										if(rc){
+											update_CR(0, t);
+										}
+										break;
+									}
 								case 104:
 								case 104+XO_OE:
-									// Negate (TODO)
-									break;
+									// Negate
+									{
+										int64 a = ~R[ra], b = 1;
+										int64 t = a + b;
+										R[rt] = t;
+										if(oe){
+											update_SO_OV(t, a, b);
+										}
+										if(rc){
+											update_CR(0, t);
+										}
+										break;
+									}
 								case 235:
 									// Multiply Low Word (TODO)
 									break;
@@ -812,4 +979,27 @@ static bool exec(){
 	NIP = NIA;
 
 	return !invalid;
+}
+
+static void update_CR(int r, int val){
+	if(val < 0) CR[r] = LT;
+	else if(val > 0) CR[r] = GT;
+	else CR[r] = EQ;
+	CR[r] |= IS_SO;
+}
+
+static void update_SO_OV(int64 sum, int64 a, int64 b){
+	// TODO: implement
+}
+
+static void update3_SO_OV(int64 sum, int64 a, int64 b, int64 c){
+	// TODO: implement
+}
+
+static void update_CA(int64 sum, int64 a, int64 b){
+	// TODO: implement
+}
+
+static void update3_CA(int64 sum, int64 a, int64 b, int64 c){
+	// TODO: implement
 }

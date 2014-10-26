@@ -7,7 +7,10 @@ typedef int32 word;
 typedef int64 dword;
 // typedef uint128 qword;
 
-extern word CR;
+#define CR_LENGTH 8
+
+extern char CR[CR_LENGTH];
+
 extern dword LR, CTR, XER;
 extern mem_addr NIP;
 
