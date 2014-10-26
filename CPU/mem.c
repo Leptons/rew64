@@ -225,3 +225,13 @@ static byte bad_read(mem_addr addr){
 static void bad_write(mem_addr addr){
 	fprintf(stderr, "Cannot write %016lx\n", (unsigned long)addr);
 }
+
+int get_CR(int pos){
+	pos -= 32;
+	if(pos<0 || 32<=pos){
+		return -1;
+	}
+
+	int r = pos/4, p = pos-r*pos;
+	return (CR[r]>>(3-p))&1;
+}

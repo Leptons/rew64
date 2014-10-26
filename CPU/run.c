@@ -43,10 +43,11 @@ static void init(mem_addr initial_NIP){
 #define SET_SO(V) (XER^=(!!(V)^IS_SO)<<31)
 #define SET_OV(V) (XER^=(!!(V)^IS_OV)<<30)
 #define SET_CA(V) (XER^=(!!(V)^IS_CA)<<29)
-#define LO_MASK 0x0000ffff
-#define HI_MASK 0xffff0000
+#define MASK_32 0x00000000ffffffff
+#define MASK_64 0xffffffffffffffff
+#define MASK (mode_64bit?MASK_64:MASK_32)
 #define BT(I) (1LL<<(63-(I)))
-#define IEA(V) (mode_64bit?(V):((V)&LO_MASK))
+#define IEA(V) ((V)&MASK)
 #define EXTS(V, S) ((int64)(V) << (64-(S)) >> (64-(S))) // TODO: fix (currently depending on implementation)
 
 static bool exec(){
@@ -77,7 +78,22 @@ static bool exec(){
 			{
 				int bo, bi, bd, aa, lk;
 				load_b_form_inst(inst, &bo, &bi, &bd, &aa, &lk);
-				// Branch Conditional (TODO)
+				// Branch Conditional
+				if(~((bo>>2)&1)){
+					CTR--;
+				}
+				bool ctr_ok = (bo>>2)&1 || ((IEA(CTR)!=0) ^ ((bo>>1)&1));
+				bool cond_ok = (bo>>4)&1 || (get_CR(bi+32)==bo>>3);
+				if(ctr_ok && cond_ok){
+					if(aa){
+						NIA = IEA(EXTS(bd<<2, 16));
+					} else {
+						NIA = IEA(CIA + EXTS(bd<<2, 16));
+					}
+				}
+				if(lk){
+					LR = CIA+4;
+				}
 
 				break;
 			}
@@ -86,12 +102,38 @@ static bool exec(){
 			{
 				int bt, ba, bb, xo, lk;
 				load_xl_form_inst(inst, &bt, &ba, &bb, &xo, &lk);
+				int bo = bt;
+				int bi = ba;
+				// int bh = bb & 0x3;
 				switch(xo){
 					case 16:
-						// Branch Conditional to Link Register (TODO)
+						// Branch Conditional to Link Register
+						{
+							if(~((bo>>2)&1)){
+								CTR--;
+							}
+							bool ctr_ok = (bo>>2)&1 || ((IEA(CTR)!=0) ^ ((bo>>1)&1));
+							bool cond_ok = (bo>>4)&1 || (get_CR(bi+32)==bo>>3);
+							if(ctr_ok && cond_ok){
+								NIA = IEA(EXTS(LR&~0x3, 64));
+							}
+							if(lk){
+								LR = CIA+4;
+							}
 						break;
+						}
 					case 528:
-						// Branch Conditional to Count Register (TODO)
+						// Branch Conditional to Count Register
+						{
+							bool cond_ok = (bo>>4)&1 || (get_CR(bi+32)==bo>>3);
+							if(cond_ok){
+								NIA = IEA(EXTS(LR&~0x3, 64));
+							}
+							if(lk){
+								LR = CIA+4;
+							}
+						break;
+						}
 						break;
 					case 257:
 						// Condition Register AND (TODO)

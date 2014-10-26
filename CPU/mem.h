@@ -43,4 +43,6 @@ void set_mem_16(mem_addr addr, dword val);
 void set_mem_32(mem_addr addr, dword val);
 void set_mem_64(mem_addr addr, dword val);
 
+int get_CR(int pos);
+
 #endif // __MEM_H__
