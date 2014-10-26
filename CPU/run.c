@@ -118,7 +118,7 @@ static bool exec(){
 					// Load
 					case 34:
 						// Load Byte and Zero
-						GPR[rt] = read_mem_8(GPR[ra]+EXTS(d, 16));
+						R[rt] = read_mem_8((ra==0?0:R[ra])+EXTS(d, 16));
 						break;
 					case 35:
 						// Load Byte and Zero Update
@@ -126,12 +126,12 @@ static bool exec(){
 							invalid = true;
 							break;
 						}
-						GPR[ra] += EXTS(d, 16);
-						GPR[rt] = read_mem_8(GPR[ra]);
+						R[ra] += EXTS(d, 16);
+						R[rt] = read_mem_8(R[ra]);
 						break;
 					case 40:
 						// Load Halfword and Zero
-						GPR[rt] = read_mem_16(GPR[ra]+EXTS(d, 16));
+						R[rt] = read_mem_16((ra==0?0:R[ra])+EXTS(d, 16));
 						break;
 					case 41:
 						// Load Halfword and Zero with Update
@@ -139,12 +139,12 @@ static bool exec(){
 							invalid = true;
 							break;
 						}
-						GPR[ra] += EXTS(d, 16);
-						GPR[rt] = read_mem_16(GPR[ra]);
+						R[ra] += EXTS(d, 16);
+						R[rt] = read_mem_16(R[ra]);
 						break;
 					case 42:
 						// Load Halfword Algebraic
-						GPR[rt] = EXTS(read_mem_16(GPR[ra]+EXTS(d, 16)), 16);
+						R[rt] = EXTS(read_mem_16((ra==0?0:R[ra])+EXTS(d, 16)), 16);
 						break;
 					case 43:
 						// Load Halfword Algebraic with Update
@@ -152,12 +152,12 @@ static bool exec(){
 							invalid = true;
 							break;
 						}
-						GPR[ra] += EXTS(d, 16);
-						GPR[rt] = EXTS(read_mem_16(GPR[ra]), 16);
+						R[ra] += EXTS(d, 16);
+						R[rt] = EXTS(read_mem_16(R[ra]), 16);
 						break;
 					case 32:
 						// Load Word and Zero
-						GPR[rt] = read_mem_32(GPR[ra]+EXTS(d, 16));
+						R[rt] = read_mem_32((ra==0?0:R[ra])+EXTS(d, 16));
 						break;
 					case 33:
 						// Load Word and Zero with Update
@@ -165,8 +165,8 @@ static bool exec(){
 							invalid = true;
 							break;
 						}
-						GPR[ra] += EXTS(d, 16);
-						GPR[rt] = read_mem_32(GPR[ra]);
+						R[ra] += EXTS(d, 16);
+						R[rt] = read_mem_32(R[ra]);
 						break;
 
 					// Store
@@ -283,11 +283,11 @@ static bool exec(){
 						switch(xo){
 							case 2:
 								// Load Word Algebraic
-								GPR[rt] = EXTS(read_mem_32(GPR[ra]+EXTS(ds<<2, 16)), 32);
+								R[rt] = EXTS(read_mem_32((ra==0?0:R[ra])+EXTS(ds<<2, 16)), 32);
 								break;
 							case 0:
 								// Load Doubleword
-								GPR[rt] = read_mem_64(GPR[ra]+EXTS(ds<<2, 16));
+								R[rt] = read_mem_64((ra==0?0:R[ra])+EXTS(ds<<2, 16));
 								break;
 							case 1:
 								// Load Doubleword with Update
@@ -295,8 +295,8 @@ static bool exec(){
 									invalid = true;
 									break;
 								}
-								GPR[ra] += EXTS(ds<<2, 16);
-								GPR[rt] = read_mem_64(GPR[ra]);
+								R[ra] += EXTS(ds<<2, 16);
+								R[rt] = read_mem_64(R[ra]);
 								break;
 
 							default:
@@ -330,40 +330,82 @@ static bool exec(){
 				switch(xo){
 					// Load
 					case 87:
-						// Load Byte and Zero Indexed (TODO)
+						// Load Byte and Zero Indexed
+						R[rt] = read_mem_8((ra==0?0:R[ra])+R[rb]);
 						break;
 					case 119:
-						// Load Byte and Zero with Update Indexed (TODO)
+						// Load Byte and Zero with Update Indexed
+						if(ra==0 || ra==rt){
+							invalid = true;
+							break;
+						}
+						R[ra] += R[rb];
+						R[rt] = read_mem_8(R[ra]);
 						break;
 					case 279:
-						// Load Halfword and Zero Indexed (TODO)
+						// Load Halfword and Zero Indexed
+						R[rt] = read_mem_16((ra==0?0:R[ra])+R[rb]);
 						break;
 					case 311:
-						// Load Halfword and Zero with Update Indexed (TODO)
+						// Load Halfword and Zero with Update Indexed
+						if(ra==0 || ra==rt){
+							invalid = true;
+							break;
+						}
+						R[ra] += R[rb];
+						R[rt] = read_mem_16(R[ra]);
 						break;
 					case 343:
-						// Load Halfword Algebraic Indexed (TODO)
+						// Load Halfword Algebraic Indexed
+						R[rt] = EXTS(read_mem_16((ra==0?0:R[ra])+R[rb]), 16);
 						break;
 					case 375:
-						// Load Halfword Algebraic with Update Indexed (TODO)
+						// Load Halfword Algebraic with Update Indexed
+						if(ra==0 || ra==rt){
+							invalid = true;
+							break;
+						}
+						R[ra] += R[rb];
+						R[rt] = EXTS(read_mem_16(R[ra]), 16);
 						break;
 					case 23:
-						// Load Word and Zero Indexed (TODO)
+						// Load Word and Zero Indexed
+						R[rt] = read_mem_32((ra==0?0:R[ra])+R[rb]);
 						break;
 					case 55:
-						// Load Word and Zero with Update Incexed (TODO)
+						// Load Word and Zero with Update Incexed
+						if(ra==0 || ra==rt){
+							invalid = true;
+							break;
+						}
+						R[ra] += R[rb];
+						R[rt] = read_mem_32(R[ra]);
 						break;
 					case 341:
-						// Load Word Algebraic Indexed (TODO)
+						// Load Word Algebraic Indexed
+						R[rt] = EXTS(read_mem_32((ra==0?0:R[ra])+R[rb]), 32);
 						break;
 					case 373:
-						// Load Word Algebraic with Update Indexed (TODO)
+						// Load Word Algebraic with Update Indexed
+						if(ra==0 || ra==rt){
+							invalid = true;
+							break;
+						}
+						R[ra] += R[rb];
+						R[rt] = EXTS(read_mem_32(R[ra]), 32);
 						break;
 					case 21:
-						// Load Doubleword Indexed (TODO)
+						// Load Doubleword Indexed
+						R[rt] = read_mem_64((ra==0?0:R[ra])+R[rb]);
 						break;
 					case 53:
-						// Load Doubleword with Update Indexed (TODO)
+						// Load Doubleword with Update Indexed
+						if(ra==0 || ra==rt){
+							invalid = true;
+							break;
+						}
+						R[ra] += R[rb];
+						R[rt] = read_mem_64(R[ra]);
 						break;
 
 					// Store

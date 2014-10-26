@@ -11,9 +11,9 @@ extern word CR;
 extern dword LR, CTR, XER;
 extern mem_addr NIP;
 
-#define GPR_LENGTH 32
+#define R_LENGTH 32
 
-extern dword GPR[GPR_LENGTH];
+extern dword R[R_LENGTH];
 
 #define FPR_LENGTH 32
 

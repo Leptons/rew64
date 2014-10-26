@@ -12,7 +12,7 @@
 word CR;
 dword LR, CTR, XER;
 mem_addr NIP;
-dword GPR[GPR_LENGTH];
+dword R[R_LENGTH];
 double *FPR;
 /*
 qword *VR;
