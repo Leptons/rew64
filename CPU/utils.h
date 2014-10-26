@@ -6,6 +6,7 @@
 #define min(a, b) ((a)<=(b)?a:b)
 #define max(a, b) ((a)>=(b)?a:b)
 
+int64 rev(int64 val, int n, int size);
 void *xrealloc(void *mem, int size);
 void *xmalloc(int size);
 void *zmalloc(int size);

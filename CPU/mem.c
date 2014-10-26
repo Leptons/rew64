@@ -137,7 +137,7 @@ void set_mem_inst(mem_addr addr, instruction *inst){
 	}
 }
 
-void set_mem_8(mem_addr addr, byte val){
+void set_mem_8(mem_addr addr, dword val){
 	byte *mem;
 	if(IN_DATA(addr, 1)){
 		mem = data_seg - DATA_BOT;
@@ -147,10 +147,10 @@ void set_mem_8(mem_addr addr, byte val){
 		bad_write(addr);
 	}
 
-	mem[addr] = val;
+	mem[addr] = val & 0xff;
 }
 
-void set_mem_16(mem_addr addr, hword val){
+void set_mem_16(mem_addr addr, dword val){
 	byte *mem;
 	if(IN_DATA(addr, 2)){
 		mem = data_seg - DATA_BOT;
@@ -164,7 +164,7 @@ void set_mem_16(mem_addr addr, hword val){
 	mem[addr+1] = (byte)((val >> 0x00) & 0xff);
 }
 
-void set_mem_32(mem_addr addr, word val){
+void set_mem_32(mem_addr addr, dword val){
 	byte *mem;
 	if(IN_DATA(addr, 2)){
 		mem = data_seg - DATA_BOT;

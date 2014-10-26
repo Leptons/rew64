@@ -38,9 +38,9 @@ word read_mem_32(mem_addr addr);
 dword read_mem_64(mem_addr addr);
 
 void set_mem_inst(mem_addr addr, instruction *inst);
-void set_mem_8(mem_addr addr, byte val);
-void set_mem_16(mem_addr addr, hword val);
-void set_mem_32(mem_addr addr, word val);
+void set_mem_8(mem_addr addr, dword val);
+void set_mem_16(mem_addr addr, dword val);
+void set_mem_32(mem_addr addr, dword val);
 void set_mem_64(mem_addr addr, dword val);
 
 #endif // __MEM_H__

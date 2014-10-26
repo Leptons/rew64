@@ -26,9 +26,11 @@ static void init(mem_addr initial_NIP){
 	// TODO: initialize registers and flags here
 }
 
+
 #define XO_OE 0x0200 // 1<<9
 #define LO_MASK 0x0000ffff
 #define HI_MASK 0xffff0000
+#define BT(I) (1LL<<(63-(I)))
 #define IEA(V) (mode_64bit?(V):((V)&LO_MASK))
 #define EXTS(V, S) ((int64)(V) << (64-(S)) >> (64-(S)))
 
@@ -55,6 +57,7 @@ static bool exec(){
 				}
 				break;
 			}
+
 		case B_FORM:
 			{
 				int bo, bi, bd, aa, lk;
@@ -109,11 +112,25 @@ static bool exec(){
 				break;
 			}
 
+		// System Call
+		case SC_FORM:
+			{
+				int lev, aa;
+				load_sc_form_inst(inst, &lev, &aa);
+				if(aa == 1){
+					// System Call (TODO)
+					// syscall(lev);
+				} else {
+					invalid = true;
+				}
+				break;
+			}
 
 		case D_FORM:
 			{
 				int rt, ra, d;
 				load_d_form_inst(inst, &rt, &ra, &d);
+				int rs = rt;
 				switch(OPCD(inst)){
 					// Load
 					case 34:
@@ -171,31 +188,66 @@ static bool exec(){
 
 					// Store
 					case 38:
-						// Store Byte (TODO)
+						// Store Byte
+						set_mem_8((ra==0?0:R[ra])+EXTS(d, 16), rs);
 						break;
 					case 39:
-						// Store Byte (TODO)
+						// Store Byte
+						if(ra==0){
+							invalid = true;
+							break;
+						}
+						R[ra] += EXTS(d, 16);
+						set_mem_8(R[ra], rs);
 						break;
 					case 44:
-						// Store Halfword (TODO)
+						// Store Halfword
+						set_mem_16((ra==0?0:R[ra])+EXTS(d, 16), rs);
 						break;
 					case 45:
-						// Store Halfword with Update (TODO)
+						// Store Halfword with Update
+						if(ra==0){
+							invalid = true;
+							break;
+						}
+						R[ra] += EXTS(d, 16);
+						set_mem_16(R[ra], rs);
 						break;
 					case 36:
-						// Store Word (TODO)
+						// Store Word
+						set_mem_32((ra==0?0:R[ra])+EXTS(d, 16), rs);
 						break;
 					case 37:
-						// Store Word with Update (TODO)
+						// Store Word with Update
+						if(ra==0){
+							invalid = true;
+							break;
+						}
+						R[ra] += EXTS(d, 16);
+						set_mem_32(R[ra], rs);
 						break;
 
-						// Load/Store Multiple Word
+					// Load/Store Multiple Word
 					case 46:
-						// Load Multiple Word (TODO)
-						break;
+						// Load Multiple Word
+						{
+							mem_addr EA = (ra==0?0:R[ra])+EXTS(d, 16);
+							int r = rt;
+							for(; r<32; r++, EA+=4){
+								R[r] = read_mem_32(EA);
+							}
+							break;
+						}
 					case 47:
-						// Store Multiple Word (TODO)
-						break;
+						// Store Multiple Word
+						{
+							mem_addr EA = (ra==0?0:R[ra])+EXTS(d, 16);
+							int r = rs;
+							for(; r<32; r++, EA+=4){
+								set_mem_32(EA, R[r]);
+							}
+							break;
+						}
 
 					// Arithmetric Operations
 					case 14:
@@ -258,26 +310,11 @@ static bool exec(){
 				break;
 			}
 
-
-		// System Call
-		case SC_FORM:
-			{
-				int lev, aa;
-				load_sc_form_inst(inst, &lev, &aa);
-				if(aa == 1){
-					// System Call (TODO)
-					// syscall(lev);
-				} else {
-					invalid = true;
-				}
-				break;
-			}
-
-
 		case DS_FORM:
 			{
 				int rt, ra, ds, xo;
 				load_ds_form_inst(inst, &rt, &ra, &ds, &xo);
+				int rs = rt;
 				switch(OPCD(inst)){
 					case 58:
 						switch(xo){
@@ -307,10 +344,17 @@ static bool exec(){
 					case 62:
 						switch(xo){
 							case 0:
-								// Store Doubleword (TODO)
+								// Store Doubleword
+								set_mem_64((ra==0?0:R[ra])+EXTS(ds<<2, 16), rs);
 								break;
 							case 1:
-								// Store Doubleword with Update (TODO)
+								// Store Doubleword with Update
+								if(ra==0){
+									invalid = true;
+									break;
+								}
+								R[ra] += EXTS(ds<<2, 16);
+								set_mem_64(R[ra], rs);
 								break;
 
 							default:
@@ -327,6 +371,8 @@ static bool exec(){
 			{
 				int rt, ra, rb, xo, rc;
 				load_x_form_inst(inst, &rt, &ra, &rb, &xo, &rc);
+				int rs = rt;
+				int nb = rb;
 				switch(xo){
 					// Load
 					case 87:
@@ -410,55 +456,172 @@ static bool exec(){
 
 					// Store
 					case 215:
-						// Store Byte Indexed (TODO)
+						// Store Byte Indexed
+						set_mem_8((ra==0?0:R[ra])+R[rb], rs);
 						break;
 					case 247:
-						// Store Byte with Update Indexed (TODO)
+						// Store Byte with Update Indexed
+						if(ra==0){
+							invalid = true;
+							break;
+						}
+						R[ra] += R[rb];
+						set_mem_8(R[ra], rs);
 						break;
 					case 407:
-						// Store Halfword Indexed (TODO)
+						// Store Halfword Indexed
+						set_mem_16((ra==0?0:R[ra])+R[rb], rs);
 						break;
 					case 439:
-						// Store Halfword with Update Indexed (TODO)
+						// Store Halfword with Update Indexed
+						if(ra==0){
+							invalid = true;
+							break;
+						}
+						R[ra] += R[rb];
+						set_mem_16(R[ra], rs);
 						break;
 					case 151:
-						// Store Word Indexed (TODO)
+						// Store Word Indexed
+						set_mem_32((ra==0?0:R[ra])+R[rb], rs);
 						break;
 					case 183:
-						// Store Word with Update Indexed (TODO)
+						// Store Word with Update Indexed
+						if(ra==0){
+							invalid = true;
+							break;
+						}
+						R[ra] += R[rb];
+						set_mem_32(R[ra], rs);
 						break;
 					case 149:
-						// Store Doubleword Indexed (TODO)
+						// Store Doubleword Indexed
+						set_mem_64((ra==0?0:R[ra])+R[rb], rs);
 						break;
 					case 181:
-						// Store Doubleword with Update Indexed (TODO)
+						// Store Doubleword with Update Indexed
+						if(ra==0){
+							invalid = true;
+							break;
+						}
+						R[ra] += R[rb];
+						set_mem_64(R[ra], rs);
 						break;
 
 					// Load/Store Byte-Reverse Indexed
 					case 790:
-						// Load Halfword Byte-Reverse Indexed (TODO)
+						// Load Halfword Byte-Reverse Indexed
+						R[rt] = rev(read_mem_16((ra==0?0:R[ra])+R[rb]), 2, 8);
 						break;
 					case 918:
-						// Store Halfword Byte-Reverse Indexed (TODO)
+						// Store Halfword Byte-Reverse Indexed
+						if(ra==0){
+							invalid = true;
+							break;
+						}
+						R[ra] += R[rb];
+						set_mem_16(R[ra], rev(rs, 2, 8));
 						break;
 					case 534:
-						// Load Word Byte-Reverse Indexed (TODO)
+						// Load Word Byte-Reverse Indexed
+						R[rt] = rev(read_mem_32((ra==0?0:R[ra])+R[rb]), 4, 8);
 						break;
 					case 662:
-						// Store Word Byte-Reverse Indexed (TODO)
+						// Store Word Byte-Reverse Indexed 
+						if(ra==0){
+							invalid = true;
+							break;
+						}
+						R[ra] += R[rb];
+						set_mem_32(R[ra], rev(rs, 4, 8));
 						break;
 
-						// Load/Store String
+					// Load/Store String
 					case 597:
-						// Load String Word Immediate (TODO)
-						break;
+						// Load String Word Immediate
+						{
+							if(ra==0){
+								invalid = true;
+							}
+							mem_addr EA = (ra==0?0:R[ra]);
+							int n = (nb==0?32:nb);
+							int r = rt-1;
+							int i = 32;
+							for(; n>0; n--, EA++){
+								if(i==32){
+									r++;
+									if(r==32) r = 0;
+									R[r] = 0;
+								}
+								R[r] &= ~(BT(i-1)-BT(i+7)); // TODO: test
+								R[r] = read_mem_8(EA) << (63-(i+7));
+								i += 8;
+								if(i==64) i = 32;
+							}
+							break;
+						}
 					case 533:
-						// Load String Word Indexed (TODO)
+						// Load String Word Indexed
+						{
+							if(rt==ra || rt==rb){
+								invalid = true;
+							}
+							mem_addr EA = (ra==0?0:R[ra])+R[rb];
+							int n = XER & 0x7f;
+							int r = rt-1;
+							int i = 32;
+							R[rt] = -1; // undifined
+							for(; n>0; n--, EA++){
+								if(i==32){
+									r++;
+									if(r==32) r = 0;
+									R[r] = 0;
+								}
+								R[r] &= ~(BT(i-1)-BT(i+7)); // TODO: test
+								R[r] = read_mem_8(EA) << (63-(i+7));
+								i += 8;
+								if(i==64) i = 32;
+							}
+							break;
+						}
 						break;
 					case 725:
-						// Store String Word Immediate (TODO)
+						// Store String Word Immediate
+						{
+							mem_addr EA = (ra==0?0:R[ra]);
+							int n = (nb==0?32:nb);
+							int r = rs-1;
+							int i = 32;
+							for(; n>0; n--, EA++){
+								if(i==32){
+									r++;
+									if(r==32) r = 0;
+								}
+								set_mem_8(EA, R[r] >> (63-(i+7)));
+								i += 8;
+								if(i==64) i = 32;
+							}
+							break;
+						}
+
 					case 661:
-						// Store String Word Indexed (TODO)
+						// Store String Word Indexed
+						{
+							mem_addr EA = (ra==0?0:R[ra])+R[rb];
+							int n = XER & 0x7f;
+							int r = rs-1;
+							int i = 32;
+							for(; n>0; n--, EA++){
+								if(i==32){
+									r++;
+									if(r==32) r = 0;
+								}
+								set_mem_8(EA, R[r] >> (63-(i+7)));
+								i += 8;
+								if(i==64) i = 32;
+							}
+							break;
+						}
 						break;
 						
 					// Compare
