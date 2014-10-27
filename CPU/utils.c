@@ -23,6 +23,34 @@ int64 rev(int64 val, int n, int size){
 	return res;
 }
 
+// rotate left n times (m bit)
+int64 rot(int64 val, int n, int m){
+	int i;
+	m--;
+	for(i = 0; i < n; i++){
+		int tmp = (val>>m)&1;
+		val <<= 1;
+		val |= tmp;
+	}
+
+	return val;
+}
+
+// mask from left through right
+int64 mk_mask(int left, int right){
+	if(left > right) return 0;
+	int64 mask = 0;
+	if(left==0){
+		mask |= 1LL<<63;
+		left++;
+	}
+	left = 63 - left;
+	right = 63 - right;
+	mask |= (1LL<<(left+1)) - (1LL<<right);
+	return mask;
+}
+
+
 void *xrealloc(void *mem, int size){
 	if(mem == NULL){
 		return mem = malloc(size);

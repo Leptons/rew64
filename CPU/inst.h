@@ -12,7 +12,8 @@ typedef enum {
 	// XS_FORM,
 	// XO_FORM
 	XL_FORM,
-	M_FORM
+	M_FORM,
+	MD_FORM
 } inst_form;
 
 typedef struct {
@@ -105,6 +106,15 @@ typedef struct {
 } m_form_inst;
 
 typedef struct {
+	int rs;
+	int ra;
+	int sh;
+	int mb;
+	int xo;
+	int rc;
+} md_form_inst;
+
+typedef struct {
 	int opcd;
 	union {
 		i_form_inst i;
@@ -118,6 +128,7 @@ typedef struct {
 		// xo_form_inst xo;
 		xl_form_inst xl;
 		m_form_inst m;
+		md_form_inst md;
 	} inst;
 
 	word encoding;
@@ -165,6 +176,10 @@ typedef struct {
 #define BIN_MB(V) (BIN_REG((V), 21, 26))
 #define BIN_ME(V) (BIN_REG((V), 26, 31))
 
+#define BIN_MD_MB(V) (BIN_REG((V), 21, 27))
+#define BIN_MD_XO(V) (BIN_REG((V), 27, 30))
+#define BIN_SH2(V) (BIN_REG((V), 21, 26)<<1 | BIN_REG((V), 30, 31))
+
 
 instruction *decode_inst(word val);
 void load_i_form_inst(instruction *inst, int *li, int *aa, int *lk);
@@ -175,6 +190,7 @@ void load_ds_form_inst(instruction *inst, int *rt, int *ra, int *ds, int *xo);
 void load_x_form_inst(instruction *inst, int *rt, int *ra, int *rb, int *xo, int *rc);
 void load_b_form_inst(instruction *inst, int *bo, int *bi, int *bd, int *aa, int *lk);
 void load_m_form_inst(instruction *inst, int *rs, int *ra, int *rb, int *mb, int *me, int *rc);
+void load_md_form_inst(instruction *inst, int *rs, int *ra, int *sh, int *mb, int *xo, int *rc);
 void free_inst(instruction *inst);
 
 #endif // __INST_H__

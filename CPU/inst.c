@@ -13,6 +13,7 @@ static instruction *st_x_form_inst(instruction *inst, word val);
 static instruction *st_d_form_inst(instruction *inst, word val);
 static instruction *st_ds_form_inst(instruction *inst, word val);
 static instruction *st_m_form_inst(instruction *inst, word val);
+static instruction *st_md_form_inst(instruction *inst, word val);
 static instruction *st_bad_inst(instruction *inst, word val);
 
 
@@ -38,6 +39,8 @@ instruction *decode_inst(word val){
 		return st_ds_form_inst(inst, val);
 	} else if(M_FORM_INST_L <= opcd && opcd < M_FORM_INST_R){
 		return st_m_form_inst(inst, val);
+	} else if(opcd == MD_FORM_INST){
+		return st_md_form_inst(inst, val);
 	} else {
 		inst->opcd = 0;
 		return st_bad_inst(inst, val);
@@ -131,6 +134,18 @@ static instruction *st_m_form_inst(instruction *inst, word val){
 	return inst;
 }
 
+static instruction *st_md_form_inst(instruction *inst, word val){
+	inst->inst.md.rs = BIN_RS(val);
+	inst->inst.md.ra = BIN_RA(val);
+	inst->inst.md.sh = BIN_SH2(val);
+	inst->inst.md.mb = BIN_MD_MB(val);
+	inst->inst.md.xo = BIN_MD_XO(val);
+	inst->inst.md.rc = BIN_RC(val);
+
+	inst->form = MD_FORM;
+	return inst;
+}
+
 static instruction *st_bad_inst(instruction *inst, word val){
 	fprintf(stderr, "Cannot create instruction\n");
 	return inst;
@@ -192,6 +207,14 @@ void load_m_form_inst(instruction *inst, int *rs, int *ra, int *rb, int *mb, int
 	*rc = inst->inst.m.rc;
 }
 
+void load_md_form_inst(instruction *inst, int *rs, int *ra, int *sh, int *mb, int *xo, int *rc){
+	*rs = inst->inst.md.rs;
+	*ra = inst->inst.md.ra;
+	*sh = inst->inst.md.sh;
+	*mb = inst->inst.md.mb;
+	*xo = inst->inst.md.xo;
+	*rc = inst->inst.md.rc;
+}
 void free_inst(instruction *inst){
 	free(inst);
 }

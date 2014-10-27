@@ -45,6 +45,8 @@ static void init(mem_addr initial_NIP){
 #define SET_SO(V) (XER^=(!!(V)^IS_SO)<<31)
 #define SET_OV(V) (XER^=(!!(V)^IS_OV)<<30)
 #define SET_CA(V) (XER^=(!!(V)^IS_CA)<<29)
+#define MASK_8  0x00000000000000ff
+#define MASK_16 0x000000000000ffff
 #define MASK_32 0x00000000ffffffff
 #define MASK_64 0xffffffffffffffff
 #define MASK (mode_64bit?MASK_64:MASK_32)
@@ -122,7 +124,7 @@ static bool exec(){
 							if(lk){
 								LR = CIA+4;
 							}
-						break;
+							break;
 						}
 					case 528:
 						// Branch Conditional to Count Register
@@ -134,7 +136,7 @@ static bool exec(){
 							if(lk){
 								LR = CIA+4;
 							}
-						break;
+							break;
 						}
 						break;
 					case 257:
@@ -171,7 +173,7 @@ static bool exec(){
 				break;
 			}
 
-		// System Call
+			// System Call
 		case SC_FORM:
 			{
 				int lev, aa;
@@ -250,7 +252,7 @@ static bool exec(){
 						R[rt] = read_mem_32(R[ra]);
 						break;
 
-					// Store
+						// Store
 					case 38:
 						// Store Byte
 						set_mem_8((ra==0?0:R[ra])+EXTS(d, 16), rs);
@@ -291,7 +293,7 @@ static bool exec(){
 						set_mem_32(R[ra], rs);
 						break;
 
-					// Load/Store Multiple Word
+						// Load/Store Multiple Word
 					case 46:
 						// Load Multiple Word
 						{
@@ -313,7 +315,7 @@ static bool exec(){
 							break;
 						}
 
-					// Arithmetric Operations
+						// Arithmetric Operations
 					case 14:
 						// Add Immediate
 						R[rt] = (ra==0?0:R[ra])+EXTS(si, 16);
@@ -353,7 +355,7 @@ static bool exec(){
 						// Multiply Low Immediate (TODO)
 						break;
 
-					// Compare
+						// Compare
 					case 11:
 						// Compare Immediate
 						{
@@ -379,46 +381,42 @@ static bool exec(){
 							break;
 						}
 
-					// Trap
+						// Trap
 					case 3:
 						// Trap Word Immediate
 						use_trap(to, EXTS(R[ra]&MASK_32, 32), EXTS(si, 16));
 						break;
 					case 2:
-						// Trap Doubleword Immediate (TODO)
+						// Trap Doubleword Immediate
 						use_trap(to, R[ra], EXTS(si, 16));
 						break;
 
-					// Logical Operations
+						// Logical Operations
 					case 28:
 						// AND Immediate
 						R[ra] = R[rs] & ui;
-						// TODO: update CR0
+						update_CR(0, R[ra], 0);
 						break;
 					case 29:
 						// And Immediate Shifted
 						R[ra] = R[rs] & (ui<<16);
-						// TODO: update CR0
+						update_CR(0, R[ra], 0);
 						break;
 					case 24:
 						// OR Immediate
 						R[ra] = R[rs] | ui;
-						// TODO: update CR0
 						break;
 					case 25:
 						// OR Immediate Shifted
 						R[ra] = R[rs] | (ui<<16);
-						// TODO: update CR0
 						break;
 					case 26:
 						// XOR Immediate
 						R[ra] = R[rs] ^ ui;
-						// TODO: update CR0
 						break;
 					case 27:
 						// XOR Immediate Shifted
 						R[ra] = R[rs] ^ (ui<<16);
-						// TODO: update CR0
 						break;
 
 					default:
@@ -494,6 +492,7 @@ static bool exec(){
 				int to = rt;
 				int l = rt&1;
 				int nb = rb;
+				int sh = rb;
 				switch(xo){
 					// Load
 					case 87:
@@ -575,7 +574,7 @@ static bool exec(){
 						R[rt] = read_mem_64(R[ra]);
 						break;
 
-					// Store
+						// Store
 					case 215:
 						// Store Byte Indexed
 						set_mem_8((ra==0?0:R[ra])+R[rb], rs);
@@ -629,7 +628,7 @@ static bool exec(){
 						set_mem_64(R[ra], rs);
 						break;
 
-					// Load/Store Byte-Reverse Indexed
+						// Load/Store Byte-Reverse Indexed
 					case 790:
 						// Load Halfword Byte-Reverse Indexed
 						R[rt] = rev(read_mem_16((ra==0?0:R[ra])+R[rb]), 2, 8);
@@ -657,7 +656,7 @@ static bool exec(){
 						set_mem_32(R[ra], rev(rs, 4, 8));
 						break;
 
-					// Load/Store String
+						// Load/Store String
 					case 597:
 						// Load String Word Immediate
 						{
@@ -744,8 +743,8 @@ static bool exec(){
 							break;
 						}
 						break;
-						
-					// Compare
+
+						// Compare
 					case 0:
 						// Compare (TODO)
 						{
@@ -775,7 +774,7 @@ static bool exec(){
 							break;
 						}
 
-					// Trap
+						// Trap
 					case 4:
 						// Trap Word
 						use_trap(to, EXTS(R[ra]&MASK_32, 32), EXTS(R[rb]&MASK_32, 32));
@@ -785,315 +784,576 @@ static bool exec(){
 						use_trap(to, R[ra], R[rb]);
 						break;
 
-					// Logical Operations
+						// Logical Operations
 					case 28:
 						// AND
 						R[ra] = R[rs]&R[rb];
-						// TODO: update CR0
+						if(rc) update_CR(0, R[ra], 0);
 						break;
 					case 444:
 						// OR
 						R[ra] = R[rs]|R[rb];
-						// TODO: update CR0
+						if(rc) update_CR(0, R[ra], 0);
 						break;
 					case 316:
 						// XOR 
 						R[ra] = R[rs]^R[rb];
-						// TODO: update CR0
+						if(rc) update_CR(0, R[ra], 0);
 						break;
 					case 476:
 						// NAND 
 						R[ra] = ~(R[rs]&R[rb]);
-						// TODO: update CR0
+						if(rc) update_CR(0, R[ra], 0);
 						break;
 					case 124:
 						// NOR 
 						R[ra] = ~(R[rs]|R[rb]);
-						// TODO: update CR0
+						if(rc) update_CR(0, R[ra], 0);
 						break;
 					case 284:
 						// Equivalent 
 						R[ra] = ~(R[rs]^R[rb]);
-						// TODO: update CR0
+						if(rc) update_CR(0, R[ra], 0);
 						break;
 					case 60:
 						// AND with Complement
 						R[ra] = (R[rs]&~R[rb]);
-						// TODO: update CR0
+						if(rc) update_CR(0, R[ra], 0);
 						break;
 					case 412:
 						// OR with Complement
 						R[ra] = (R[rs]|~R[rb]);
-						// TODO: update CR0
+						if(rc) update_CR(0, R[ra], 0);
 						break;
 					case 954:
-						// Extend Sign Byte (TODO)
+						// Extend Sign Byte
+						R[ra] = EXTS(R[rs]&MASK_8, 8);
+						if(rc) update_CR(0, R[ra], 0);
 						break;
 					case 922:
-						// Extend Sign Halfword (TODO)
+						// Extend Sign Halfword
+						R[ra] = EXTS(R[rs]&MASK_16, 16);
+						if(rc) update_CR(0, R[ra], 0);
 						break;
 					case 26:
-						// Count Leading Zeros Word (TODO)
-						break;
+						// Count Leading Zeros Word
+						{
+							int n = 31;
+							while(n >= 0 && !(R[rs]&(1<<(n--))));
+							R[ra] = 31-n;
+							if(rc) update_CR(0, R[ra], 0);
+							break;
+						}
 					case 508:
-						// Compare Bytes (TODO)
-						break;
+						// Compare Bytes
+						{
+							int n;
+							for(n = 0; n < 8; n++){
+								int64 mask = MASK_8<<(8*n);
+								if((R[rs]&mask) == (R[rb]&mask)) R[ra] |= mask;
+								else R[ra] &= ~mask;
+							}
+							break;
+						}
 					case 186:
-						// Parity Doubleword (TODO)
-						break;
+						// Parity Doubleword
+						{
+							int s = 0;
+							int i;
+							for(i = 0; i < 8; i++){
+								s ^= (rs>>(8*i))&1;
+							}
+							R[ra] = s;
+							break;
+						}
 					case 154:
-						// Parity Word (TODO)
-						break;
+						// Parity Word
+						{
+							int64 s = 0;
+							int t = 0;
+							int i;
+							for(i = 0; i < 4; i++){
+								t ^= (rs>>(8*i))&1;
+							}
+							for(i = 4; i < 8; i++){
+								s ^= (rs>>(8*i))&1;
+							}
+							R[ra] = t;
+							R[ra] |= s<<32;
+							break;
+						}
 					case 986:
-						// Extend Sign Word (TODO)
+						// Extend Sign Word
+						R[ra] = EXTS(R[rs], 32);
+						if(rc) update_CR(0, R[ra], 0);
 						break;
 					case 122:
-						// Population Count Bytes (TODO)
-						break;
+						// Population Count Bytes 
+						{
+							int i, j;
+							R[ra] = 0;
+							for(i = 0; i < 8; i++){
+								int64 n = 0;
+								for(j = 0; j < 8; j++){
+									if(R[rs]&(1LL<<(8*i+j))) n++;
+								}
+								R[ra] |= n<<(8*i);
+							}
+							break;
+						}
 					case 58:
-						// Count Leading Zeros Doubleword (TODO)
-						break;
+						// Count Leading Zeros Doubleword
+						{
+							int n = 64;
+							while(n >= 0 && !(R[rs]&(1LL<<(n--))));
+							R[ra] = 63-n;
+							if(rc) update_CR(0, R[ra], 0);
+							break;
+						}
 
-					// XO_FORM
+						// Shift
+					case 24:
+						// Shift Left Word
+						{
+							int64 n = R[rb]&0x1f;
+							int64 r = rot(R[rs]&MASK_32, n, 32);
+							int64 m = (R[rb]&(1<<5))?0:mk_mask(32, 63-n);
+							R[ra] = r&m;
+							if(rc) update_CR(0, R[ra], 0);
+						}
+					case 536:
+						// Shift Right Word
+						{
+							int64 n = R[rb]&0x1f;
+							int64 r = rot(R[rs]&MASK_32, 64-n, 32);
+							int64 m = (R[rb]&(1<<5))?0:mk_mask(n+32, 63);
+							R[ra] = r&m;
+							if(rc) update_CR(0, R[ra], 0);
+						}
+					case 824:
+						// Shift Right Algebraic Word Immediate
+						{
+							int64 n = sh;
+							int64 r = rot(R[rs]&MASK_32, 64-n, 32);
+							int64 m = mk_mask(n+32, 63);
+							int64 s = (R[rs]>>31)&1;
+							R[ra] = (r&m) | ((-s)&~m);
+							SET_CA(s & (((r&~m)&MASK_32)!=0));
+							if(rc) update_CR(0, R[ra], 0);
+						}
+					case 792:
+						// Shift Right Algebraic Word
+						{
+							int64 n = R[rb]&0x1f;
+							int64 r = rot(R[rs]&MASK_32, 64-n, 32);
+							int64 m = (R[rb]&(1<<5))?0:mk_mask(n+32, 63);
+							int64 s = (R[rs]>>31)&1;
+							R[ra] = (r&m) | ((-s)&~m);
+							SET_CA(s & (((r&~m)&MASK_32)!=0));
+							if(rc) update_CR(0, R[ra], 0);
+						}
+					case 27:
+						// Shift Left Doubleword
+						{
+							int64 n = R[rb]&0x3f;
+							int64 r = rot(R[rs], n, 64);
+							int64 m = (R[rb]&(1<<6))?0:mk_mask(0, 63-n);
+							R[ra] = r&m;
+							if(rc) update_CR(0, R[ra], 0);
+						}
+					case 539:
+						// Shift Right Doubleword
+						{
+							int64 n = R[rb]&0x3f;
+							int64 r = rot(R[rs], 64-n, 64);
+							int64 m = (R[rb]&(1<<6))?0:mk_mask(n, 63);
+							R[ra] = r&m;
+							if(rc) update_CR(0, R[ra], 0);
+						}
+					case 794:
+						// Shift Right Algebraic Doubleword
+						{
+							int64 n = R[rb]&0x3f;
+							int64 r = rot(R[rs], 64-n, 64);
+							int64 m = (R[rb]&(1<<6))?0:mk_mask(n, 63);
+							int64 s = R[rs]&1;
+							R[ra] = (r&m) | ((-s)&~m);
+							SET_CA(s & ((r&~m)!=0));
+							if(rc) update_CR(0, R[ra], 0);
+							break;
+						}
+
 					default:
 						{
-							int oe = xo & XO_OE;
-							xo &= ~XO_OE;
-							switch(xo){
-								// Arithmetric Operations
-								case 266:
-								case 266+XO_OE: // TODO: remove these lines after tested
-									// Add
-									{
-										int64 a = R[ra], b = R[rb];
-										int64 t = a + b;
-										R[rt] = t;
-										if(oe){
-											update_SO_OV(t, a, b);
-										}
-										if(rc){
-											update_CR(0, t, 0);
-										}
-										break;
-									}
-								case 40:
-								case 40+XO_OE:
-									// Subtract From
-									{
-										int64 a = -R[ra], b = R[rb];
-										int64 t = a + b;
-										R[rt] = t;
-										if(oe){
-											update_SO_OV(t, a, b);
-										}
-										if(rc){
-											update_CR(0, t, 0);
-										}
-										break;
-									}
-								case 10:
-								case 10+XO_OE:
-									// Add Carrying
-									{
-										int64 a = R[ra], b = R[rb];
-										int64 t = a + b;
-										R[rt] = t;
-										update_CA(t, a, b);
-										if(oe){
-											update_SO_OV(t, a, b);
-										}
-										if(rc){
-											update_CR(0, t, 0);
-										}
-										break;
-									}
-								case 8:
-								case 8+XO_OE:
-									// Subtract From Carrying
-									{
-										int64 a = -R[ra], b = R[rb];
-										int64 t = a + b;
-										R[rt] = t;
-										update_CA(t, a, b);
-										if(oe){
-											update_SO_OV(t, a, b);
-										}
-										if(rc){
-											update_CR(0, t, 0);
-										}
-										break;
-									}
-								case 138:
-								case 138+XO_OE:
-									// Add Extended (TODO)
-									{
-										int64 a = R[ra], b = R[rb], c = IS_CA;
-										int64 t = a + b + c;
-										R[rt] = t;
-										update3_CA(t, a, b, c);
-										if(oe){
-											update3_SO_OV(t, a, b, c);
-										}
-										if(rc){
-											update_CR(0, t, 0);
-										}
-										break;
-									}
-								case 136:
-								case 136+XO_OE:
-									// Subtract From Extended (TODO)
-									{
-										int64 a = -R[ra], b = R[rb], c = IS_CA;
-										int64 t = a + b + c;
-										R[rt] = t;
-										update3_CA(t, a, b, c);
-										if(oe){
-											update3_SO_OV(t, a, b, c);
-										}
-										if(rc){
-											update_CR(0, t, 0);
-										}
-										break;
-									}
-								case 234:
-								case 234+XO_OE:
-									// Add to Minus One Extended
-									{
-										int64 a = R[ra], b = IS_CA - 1;
-										int64 t = a + b;
-										R[rt] = t;
-										update_CA(t, a, b);
-										if(oe){
-											update_SO_OV(t, a, b);
-										}
-										if(rc){
-											update_CR(0, t, 0);
-										}
-										break;
-									}
-								case 232:
-								case 232+XO_OE:
-									// Subtract From Minus One Extended
-									{
-										int64 a = -R[ra], b = IS_CA - 1;
-										int64 t = a + b;
-										R[rt] = t;
-										update_CA(t, a, b);
-										if(oe){
-											update_SO_OV(t, a, b);
-										}
-										if(rc){
-											update_CR(0, t, 0);
-										}
-										break;
-									}
-								case 202:
-								case 202+XO_OE:
-									// Add to Zero Extended
-									{
-										int64 a = R[ra], b = IS_CA;
-										int64 t = a + b;
-										R[rt] = t;
-										update_CA(t, a, b);
-										if(oe){
-											update_SO_OV(t, a, b);
-										}
-										if(rc){
-											update_CR(0, t, 0);
-										}
-										break;
-									}
-								case 200:
-								case 200+XO_OE:
-									// Subtract From Zero Extended
-									{
-										int64 a = -R[ra], b = IS_CA;
-										int64 t = a + b;
-										R[rt] = t;
-										update_CA(t, a, b);
-										if(oe){
-											update_SO_OV(t, a, b);
-										}
-										if(rc){
-											update_CR(0, t, 0);
-										}
-										break;
-									}
-								case 104:
-								case 104+XO_OE:
-									// Negate
-									{
-										int64 a = ~R[ra], b = 1;
-										int64 t = a + b;
-										R[rt] = t;
-										if(oe){
-											update_SO_OV(t, a, b);
-										}
-										if(rc){
-											update_CR(0, t, 0);
-										}
-										break;
-									}
-								case 235:
-									// Multiply Low Word (TODO
-									{
-										R[rt] = (R[ra]&MASK_32) * (R[rb]&MASK_32);
-										break;
-									}
-								case 75:
-									// Multiply High Word (TODO)
-									break;
-								case 11:
-									// Multiply High Word Unsigned (TODO)
-									break;
-								case 491:
-									// Divide Word (TODO)
-									break;
-								case 259:
-									// Divide Word Unsigned (TODO)
-									break;
-								case 233:
-									// Divide Low Doubleword (TODO)
-									break;
-								case 73:
-									// Divide High Doubleword (TODO)
-									break;
-								case 9:
-									// Divide High Doubleword Unsigned (TODO)
-									break;
-								case 489:
-									// Divide Doubleword (TODO)
-									break;
-								case 457:
-									// Divide Doubleword Unsigned (TODO)
-									break;
-
-								default:
-									// A_FORM (TODO: move before XO_FORM)
-									/* Interger Select
-									 */
-									invalid = true;
+						}
+				}
+				// XO_FORM
+				int oe = xo & XO_OE;
+				switch(xo&~XO_OE){
+					// Arithmetric Operations
+					case 266:
+					case 266+XO_OE: // TODO: remove these lines after tested
+						// Add
+						{
+							int64 a = R[ra], b = R[rb];
+							int64 t = a + b;
+							R[rt] = t;
+							if(oe){
+								update_SO_OV(t, a, b);
 							}
+							if(rc){
+								update_CR(0, t, 0);
+							}
+							break;
+						}
+					case 40:
+					case 40+XO_OE:
+						// Subtract From
+						{
+							int64 a = -R[ra], b = R[rb];
+							int64 t = a + b;
+							R[rt] = t;
+							if(oe){
+								update_SO_OV(t, a, b);
+							}
+							if(rc){
+								update_CR(0, t, 0);
+							}
+							break;
+						}
+					case 10:
+					case 10+XO_OE:
+						// Add Carrying
+						{
+							int64 a = R[ra], b = R[rb];
+							int64 t = a + b;
+							R[rt] = t;
+							update_CA(t, a, b);
+							if(oe){
+								update_SO_OV(t, a, b);
+							}
+							if(rc){
+								update_CR(0, t, 0);
+							}
+							break;
+						}
+					case 8:
+					case 8+XO_OE:
+						// Subtract From Carrying
+						{
+							int64 a = -R[ra], b = R[rb];
+							int64 t = a + b;
+							R[rt] = t;
+							update_CA(t, a, b);
+							if(oe){
+								update_SO_OV(t, a, b);
+							}
+							if(rc){
+								update_CR(0, t, 0);
+							}
+							break;
+						}
+					case 138:
+					case 138+XO_OE:
+						// Add Extended (TODO)
+						{
+							int64 a = R[ra], b = R[rb], c = IS_CA;
+							int64 t = a + b + c;
+							R[rt] = t;
+							update3_CA(t, a, b, c);
+							if(oe){
+								update3_SO_OV(t, a, b, c);
+							}
+							if(rc){
+								update_CR(0, t, 0);
+							}
+							break;
+						}
+					case 136:
+					case 136+XO_OE:
+						// Subtract From Extended (TODO)
+						{
+							int64 a = -R[ra], b = R[rb], c = IS_CA;
+							int64 t = a + b + c;
+							R[rt] = t;
+							update3_CA(t, a, b, c);
+							if(oe){
+								update3_SO_OV(t, a, b, c);
+							}
+							if(rc){
+								update_CR(0, t, 0);
+							}
+							break;
+						}
+					case 234:
+					case 234+XO_OE:
+						// Add to Minus One Extended
+						{
+							int64 a = R[ra], b = IS_CA - 1;
+							int64 t = a + b;
+							R[rt] = t;
+							update_CA(t, a, b);
+							if(oe){
+								update_SO_OV(t, a, b);
+							}
+							if(rc){
+								update_CR(0, t, 0);
+							}
+							break;
+						}
+					case 232:
+					case 232+XO_OE:
+						// Subtract From Minus One Extended
+						{
+							int64 a = -R[ra], b = IS_CA - 1;
+							int64 t = a + b;
+							R[rt] = t;
+							update_CA(t, a, b);
+							if(oe){
+								update_SO_OV(t, a, b);
+							}
+							if(rc){
+								update_CR(0, t, 0);
+							}
+							break;
+						}
+					case 202:
+					case 202+XO_OE:
+						// Add to Zero Extended
+						{
+							int64 a = R[ra], b = IS_CA;
+							int64 t = a + b;
+							R[rt] = t;
+							update_CA(t, a, b);
+							if(oe){
+								update_SO_OV(t, a, b);
+							}
+							if(rc){
+								update_CR(0, t, 0);
+							}
+							break;
+						}
+					case 200:
+					case 200+XO_OE:
+						// Subtract From Zero Extended
+						{
+							int64 a = -R[ra], b = IS_CA;
+							int64 t = a + b;
+							R[rt] = t;
+							update_CA(t, a, b);
+							if(oe){
+								update_SO_OV(t, a, b);
+							}
+							if(rc){
+								update_CR(0, t, 0);
+							}
+							break;
+						}
+					case 104:
+					case 104+XO_OE:
+						// Negate
+						{
+							int64 a = ~R[ra], b = 1;
+							int64 t = a + b;
+							R[rt] = t;
+							if(oe){
+								update_SO_OV(t, a, b);
+							}
+							if(rc){
+								update_CR(0, t, 0);
+							}
+							break;
+						}
+					case 235:
+						// Multiply Low Word (TODO
+						{
+							R[rt] = (R[ra]&MASK_32) * (R[rb]&MASK_32);
+							break;
+						}
+					case 75:
+						// Multiply High Word (TODO)
+						break;
+					case 11:
+						// Multiply High Word Unsigned (TODO)
+						break;
+					case 491:
+						// Divide Word (TODO)
+						break;
+					case 259:
+						// Divide Word Unsigned (TODO)
+						break;
+					case 233:
+						// Divide Low Doubleword (TODO)
+						break;
+					case 73:
+						// Divide High Doubleword (TODO)
+						break;
+					case 9:
+						// Divide High Doubleword Unsigned (TODO)
+						break;
+					case 489:
+						// Divide Doubleword (TODO)
+						break;
+					case 457:
+						// Divide Doubleword Unsigned (TODO)
+						break;
+
+					default:
+						// A_FORM (TODO: move before XO_FORM)
+						/* Interger Select
+						*/
+						invalid = true;
+				}
+				// XS_FORM
+				int sh2 = (rb<<1) | (xo&1);
+				switch(xo>>1){
+					case 413:
+						// Shift Right Algebraic Doubleword Immediate
+						{
+							int n = rot(sh2, 5, 6);
+							int64 r = rot(R[rs], 64-n, 64);
+							int64 m = mk_mask(n, 63);
+							int64 s = R[rs]&1;
+							R[ra] = (r&m) | ((-s)&~m);
+							SET_CA(s & ((r&~m)!=0));
+							if(rc) update_CR(0, R[ra], 0);
+							break;
 						}
 				}
 				break;
 			}
 
-		// Rotate
+			// Rotate
 		case M_FORM:
-			{
+			{	
+				int rs, ra, rb, mb, me, rc;
+				load_m_form_inst(inst, &rs, &ra, &rb, &mb, &me, &rc);
+				int sh = rb;
 				switch(OPCD(inst)){
 					case 21:
-						// Rotate Left Word Immediate then AND (TODO)
-						break;
+						// Rotate Left Word Immediate then AND
+						{
+							int n = sh;
+							int64 r = rot(R[rs]&MASK_32, n, 32);
+							int64 m = mk_mask(mb+32, me+32);
+							R[ra] = r&m;
+							if(rc) update_CR(0, R[ra], 0);
+							break;
+						}
 					case 23:
-						// Rotate Left Word then AND with Mask (TODO)
-						break;
+						// Rotate Left Word then AND with Mask
+						{
+							int n = R[rb] & 0x1f;
+							int64 r = rot(R[rs]&MASK_32, n, 32);
+							int64 m = mk_mask(mb+32, me+32);
+							R[ra] = r&m;
+							if(rc) update_CR(0, R[ra], 0);
+							break;
+						}
+
 					case 20:
 						// Rotate Left Word Immediate then AND with Mask (TODO)
+						{
+							int n = sh;
+							int64 r = rot(R[rs]&MASK_32, n, 32);
+							int64 m = mk_mask(mb+32, me+32);
+							R[ra] = (r&m) | (R[ra]&~m);
+							if(rc) update_CR(0, R[ra], 0);
+							break;
+						}
+
+					default:
+						invalid = true;
 						break;
+
 				}
 				break;
+			}
+
+		case MD_FORM:
+			{
+				int rs, ra, sh, mb, xo, rc;
+				load_md_form_inst(inst, &rs, &ra, &sh, &mb, &xo, &rc);
+				int me = mb;
+				switch(xo){
+					case 0:
+						// Rotate Left Doubleword Immediate then Clear Left
+						{
+							int n = rot(sh, 5, 6);
+							int64 r = rot(R[rs], n, 64);
+							int b = rot(mb, 5, 6);
+							int64 m = mk_mask(b, 63);
+							R[ra] = r&m;
+							if(rc) update_CR(0, R[ra], 0);
+							break;
+						}
+					case 1:
+						// Rotate Left Doubleword Immediate then Clear Right
+						{
+							int n = rot(sh, 5, 6);
+							int64 r = rot(R[rs], n, 64);
+							int e = rot(me, 5, 6);
+							int64 m = mk_mask(0, e);
+							R[ra] = r&m;
+							if(rc) update_CR(0, R[ra], 0);
+							break;
+						}
+					case 2:
+						// Rotate Left Doubleword then Clear
+						{
+							int n = rot(sh, 5, 6);
+							int64 r = rot(R[rs], n, 64);
+							int b = rot(mb, 5, 6);
+							int64 m = mk_mask(b, ~n);
+							R[ra] = r&m;
+							if(rc) update_CR(0, R[ra], 0);
+							break;
+						}	
+					case 3:
+						// Rotate Left Doubleword then Clear
+						{
+							int n = rot(sh, 5, 6);
+							int64 r = rot(R[rs], n, 64);
+							int b = rot(mb, 5, 6);
+							int64 m = mk_mask(b, ~n);
+							R[ra] = (r&m) | (R[ra]&~m);
+							if(rc) update_CR(0, R[ra], 0);
+							break;
+						}
+
+
+					default:
+						xo = (xo<<1) | (sh&1);
+						int rb = sh>>1;
+						switch(xo){
+							case 8:
+								// Rotate Left Doubleword then Clear Left
+								{
+									int n = R[rb] & 0x3f;
+									int64 r = rot(R[rs], n, 64);
+									int b = rot(mb, 5, 6);
+									int64 m = mk_mask(b, 63);
+									R[ra] = r&m;
+									if(rc) update_CR(0, R[ra], 0);
+									break;
+								}
+							case 9:
+								// Rotate Left Doubleword then Clear Right
+								{
+									int n = R[rb] & 0x3f;
+									int64 r = rot(R[rs], n, 64);
+									int e = rot(me, 5, 6);
+									int64 m = mk_mask(0, e);
+									R[ra] = r&m;
+									if(rc) update_CR(0, R[ra], 0);
+									break;
+								}
+
+							default:
+								invalid = true;
+						}
+
+				}
 			}
 
 		default:

@@ -7,6 +7,8 @@
 #define max(a, b) ((a)>=(b)?a:b)
 
 int64 rev(int64 val, int n, int size);
+int64 rot(int64 val, int n, int m);
+int64 mk_mask(int left, int right);
 void *xrealloc(void *mem, int size);
 void *xmalloc(int size);
 void *zmalloc(int size);

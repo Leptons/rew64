@@ -12,6 +12,7 @@
 #define M_FORM_INST_L 20
 #define M_FORM_INST_R 24
 #define MD_FORM_INST 30
+#define MDS_FORM_INST 30
 #define X_FORM_INST 31
 #define XO_FORM_INST 31
 #define A_FORM_INST 31
