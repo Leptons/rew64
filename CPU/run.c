@@ -391,22 +391,34 @@ static bool exec(){
 
 					// Logical Operations
 					case 28:
-						// AND Immediate (TODO)
+						// AND Immediate
+						R[ra] = R[rs] & ui;
+						// TODO: update CR0
 						break;
 					case 29:
-						// And Immediate Shifted (TODO)
+						// And Immediate Shifted
+						R[ra] = R[rs] & (ui<<16);
+						// TODO: update CR0
 						break;
 					case 24:
-						// OR Immediate (TODO)
+						// OR Immediate
+						R[ra] = R[rs] | ui;
+						// TODO: update CR0
 						break;
 					case 25:
-						// OR Immediate Shifted (TODO)
+						// OR Immediate Shifted
+						R[ra] = R[rs] | (ui<<16);
+						// TODO: update CR0
 						break;
 					case 26:
-						// XOR Immediate (TODO)
+						// XOR Immediate
+						R[ra] = R[rs] ^ ui;
+						// TODO: update CR0
 						break;
 					case 27:
-						// XOR Immediate Shifted (TODO)
+						// XOR Immediate Shifted
+						R[ra] = R[rs] ^ (ui<<16);
+						// TODO: update CR0
 						break;
 
 					default:
@@ -775,28 +787,44 @@ static bool exec(){
 
 					// Logical Operations
 					case 28:
-						// AND (TODO)
+						// AND
+						R[ra] = R[rs]&R[rb];
+						// TODO: update CR0
 						break;
 					case 444:
-						// OR (TODO)
+						// OR
+						R[ra] = R[rs]|R[rb];
+						// TODO: update CR0
 						break;
 					case 316:
-						// XOR (TODO)
+						// XOR 
+						R[ra] = R[rs]^R[rb];
+						// TODO: update CR0
 						break;
 					case 476:
-						// NAND (TODO)
+						// NAND 
+						R[ra] = ~(R[rs]&R[rb]);
+						// TODO: update CR0
 						break;
 					case 124:
-						// NOR (TODO)
+						// NOR 
+						R[ra] = ~(R[rs]|R[rb]);
+						// TODO: update CR0
 						break;
 					case 284:
-						// Equivalent (TODO)
+						// Equivalent 
+						R[ra] = ~(R[rs]^R[rb]);
+						// TODO: update CR0
 						break;
 					case 60:
-						// AND with Complement (TODO)
+						// AND with Complement
+						R[ra] = (R[rs]&~R[rb]);
+						// TODO: update CR0
 						break;
 					case 412:
-						// OR with Complement (TODO)
+						// OR with Complement
+						R[ra] = (R[rs]|~R[rb]);
+						// TODO: update CR0
 						break;
 					case 954:
 						// Extend Sign Byte (TODO)
