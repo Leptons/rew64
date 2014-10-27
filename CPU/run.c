@@ -14,6 +14,7 @@ static void update_SO_OV(int64 sum, int64 a, int64 b);
 static void update3_SO_OV(int64 sum, int64 a, int64 b, int64 c);
 static void update_CA(int64 sum, int64 a, int64 b);
 static void update3_CA(int64 sum, int64 a, int64 b, int64 c);
+static void use_trap(int to, int64 a, int64 b);
 
 bool run_rew64(mem_addr initial_NIP, int steps, bool display){
 	init(initial_NIP);
@@ -190,6 +191,7 @@ static bool exec(){
 				load_d_form_inst(inst, &rt, &ra, &d);
 				int rs = rt;
 				int bf = rt>>2;
+				int to = rt;
 				int l = rt&1;
 				int si = d;
 				int ui = d;
@@ -379,10 +381,12 @@ static bool exec(){
 
 					// Trap
 					case 3:
-						// Trap Word Immediate (TODO)
+						// Trap Word Immediate
+						use_trap(to, EXTS(R[ra]&MASK_32, 32), EXTS(si, 16));
 						break;
 					case 2:
 						// Trap Doubleword Immediate (TODO)
+						use_trap(to, R[ra], EXTS(si, 16));
 						break;
 
 					// Logical Operations
@@ -475,6 +479,7 @@ static bool exec(){
 				load_x_form_inst(inst, &rt, &ra, &rb, &xo, &rc);
 				int rs = rt;
 				int bf = rt>>2;
+				int to = rt;
 				int l = rt&1;
 				int nb = rb;
 				switch(xo){
@@ -760,10 +765,13 @@ static bool exec(){
 
 					// Trap
 					case 4:
-						// Trap Word (TODO)
+						// Trap Word
+						use_trap(to, EXTS(R[ra]&MASK_32, 32), EXTS(R[rb]&MASK_32, 32));
 						break;
 					case 68:
-						// Trap Doubleword (TODO)
+						// Trap Doubleword
+						use_trap(to, R[ra], R[rb]);
+						break;
 
 					// Logical Operations
 					case 28:
@@ -1033,7 +1041,7 @@ static bool exec(){
 									break;
 
 								default:
-									// A_FORM (TODO)
+									// A_FORM (TODO: move before XO_FORM)
 									/* Interger Select
 									 */
 									invalid = true;
@@ -1100,4 +1108,13 @@ static void update_CA(int64 sum, int64 a, int64 b){
 
 static void update3_CA(int64 sum, int64 a, int64 b, int64 c){
 	// TODO: implement
+}
+
+static void use_trap(int to, int64 a, int64 b){
+	// TODO: invoke trap
+	if(a < b && ((to>>4)&1));
+	if(a > b && ((to>>3)&1));
+	if(a == b && ((to>>2)&1));
+	if((uint64)a < (uint64)b && ((to>>1)&1));
+	if((uint64)a > (uint64)b && ((to>>0)&1));
 }
