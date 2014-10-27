@@ -8,7 +8,8 @@
 
 static void init(mem_addr initial_NIP);
 static bool exec(void);
-static void update_CR(int r, int val);
+static void update_CR(int r, int64 a, int64 b);
+static void update_CR_u(int r, uint64 a, uint64 b);
 static void update_SO_OV(int64 sum, int64 a, int64 b);
 static void update3_SO_OV(int64 sum, int64 a, int64 b, int64 c);
 static void update_CA(int64 sum, int64 a, int64 b);
@@ -188,7 +189,10 @@ static bool exec(){
 				int rt, ra, d;
 				load_d_form_inst(inst, &rt, &ra, &d);
 				int rs = rt;
+				int bf = rt>>2;
+				int l = rt&1;
 				int si = d;
+				int ui = d;
 				switch(OPCD(inst)){
 					// Load
 					case 34:
@@ -329,7 +333,7 @@ static bool exec(){
 							int64 a = (ra==0?0:R[ra]), b = EXTS(si, 16);
 							int64 t = a + b;
 							update_CA(t, a, b);
-							update_CR(0, t);
+							update_CR(0, t, 0);
 							R[rt] = t;
 							break;
 						}
@@ -349,11 +353,29 @@ static bool exec(){
 
 					// Compare
 					case 11:
-						// Compare Immediate (TODO)
-						break;
+						// Compare Immediate
+						{
+							int a;
+							if(l==0){
+								a = EXTS(R[ra]&MASK_32, 32);
+							} else {
+								a = R[ra]&MASK_32;
+							}
+							update_CR(bf, a, EXTS(si, 16));
+							break;
+						}
 					case 10:
-						// Compare Logical Immediate (TODO)
-						break;
+						// Compare Logical Immediate
+						{
+							int a;
+							if(l){
+								a = R[ra]&MASK_32;
+							} else {
+								a = R[ra];
+							}
+							update_CR_u(bf, a, ui);
+							break;
+						}
 
 					// Trap
 					case 3:
@@ -452,6 +474,8 @@ static bool exec(){
 				int rt, ra, rb, xo, rc;
 				load_x_form_inst(inst, &rt, &ra, &rb, &xo, &rc);
 				int rs = rt;
+				int bf = rt>>2;
+				int l = rt&1;
 				int nb = rb;
 				switch(xo){
 					// Load
@@ -707,10 +731,32 @@ static bool exec(){
 					// Compare
 					case 0:
 						// Compare (TODO)
-						break;
+						{
+							int a, b;
+							if(l){
+								a = EXTS(R[ra]&MASK_32, 32);
+								b = EXTS(R[rb]&MASK_32, 32);
+							} else {
+								a = R[ra];
+								b = R[rb];
+							}
+							update_CR(bf, a, b);
+							break;
+						}
 					case 32:
-						// Compare Logical (TODO)
-						break;
+						// Compare Logical
+						{
+							int a, b;
+							if(l){
+								a = R[ra]&MASK_32;
+								b = R[rb]&MASK_32;
+							} else {
+								a = R[ra];
+								b = R[rb];
+							}
+							update_CR_u(bf, a, b);
+							break;
+						}
 
 					// Trap
 					case 4:
@@ -790,7 +836,7 @@ static bool exec(){
 											update_SO_OV(t, a, b);
 										}
 										if(rc){
-											update_CR(0, t);
+											update_CR(0, t, 0);
 										}
 										break;
 									}
@@ -805,7 +851,7 @@ static bool exec(){
 											update_SO_OV(t, a, b);
 										}
 										if(rc){
-											update_CR(0, t);
+											update_CR(0, t, 0);
 										}
 										break;
 									}
@@ -821,7 +867,7 @@ static bool exec(){
 											update_SO_OV(t, a, b);
 										}
 										if(rc){
-											update_CR(0, t);
+											update_CR(0, t, 0);
 										}
 										break;
 									}
@@ -837,7 +883,7 @@ static bool exec(){
 											update_SO_OV(t, a, b);
 										}
 										if(rc){
-											update_CR(0, t);
+											update_CR(0, t, 0);
 										}
 										break;
 									}
@@ -853,7 +899,7 @@ static bool exec(){
 											update3_SO_OV(t, a, b, c);
 										}
 										if(rc){
-											update_CR(0, t);
+											update_CR(0, t, 0);
 										}
 										break;
 									}
@@ -869,7 +915,7 @@ static bool exec(){
 											update3_SO_OV(t, a, b, c);
 										}
 										if(rc){
-											update_CR(0, t);
+											update_CR(0, t, 0);
 										}
 										break;
 									}
@@ -885,7 +931,7 @@ static bool exec(){
 											update_SO_OV(t, a, b);
 										}
 										if(rc){
-											update_CR(0, t);
+											update_CR(0, t, 0);
 										}
 										break;
 									}
@@ -901,7 +947,7 @@ static bool exec(){
 											update_SO_OV(t, a, b);
 										}
 										if(rc){
-											update_CR(0, t);
+											update_CR(0, t, 0);
 										}
 										break;
 									}
@@ -917,7 +963,7 @@ static bool exec(){
 											update_SO_OV(t, a, b);
 										}
 										if(rc){
-											update_CR(0, t);
+											update_CR(0, t, 0);
 										}
 										break;
 									}
@@ -933,7 +979,7 @@ static bool exec(){
 											update_SO_OV(t, a, b);
 										}
 										if(rc){
-											update_CR(0, t);
+											update_CR(0, t, 0);
 										}
 										break;
 									}
@@ -948,13 +994,16 @@ static bool exec(){
 											update_SO_OV(t, a, b);
 										}
 										if(rc){
-											update_CR(0, t);
+											update_CR(0, t, 0);
 										}
 										break;
 									}
 								case 235:
-									// Multiply Low Word (TODO)
-									break;
+									// Multiply Low Word (TODO
+									{
+										R[rt] = (R[ra]&MASK_32) * (R[rb]&MASK_32);
+										break;
+									}
 								case 75:
 									// Multiply High Word (TODO)
 									break;
@@ -1023,9 +1072,16 @@ static bool exec(){
 	return !invalid;
 }
 
-static void update_CR(int r, int val){
-	if(val < 0) CR[r] = LT;
-	else if(val > 0) CR[r] = GT;
+static void update_CR(int r, int64 a, int64 b){
+	if(a < b) CR[r] = LT;
+	else if(a > b) CR[r] = GT;
+	else CR[r] = EQ;
+	CR[r] |= IS_SO;
+}
+
+static void update_CR_u(int r, uint64 a, uint64 b){
+	if(a < b) CR[r] = LT;
+	else if(a > b) CR[r] = GT;
 	else CR[r] = EQ;
 	CR[r] |= IS_SO;
 }
