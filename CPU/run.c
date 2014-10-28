@@ -19,7 +19,7 @@ static void use_trap(int to, int64 a, int64 b);
 bool run_rew64(mem_addr initial_NIP, int steps, bool display){
 	init(initial_NIP);
 
-	for(; steps >= 0; steps--){
+	for(; steps > 0; steps--){
 		if(!exec()){
 			return false;
 		}
@@ -55,6 +55,7 @@ static void init(mem_addr initial_NIP){
 #define EXTS(V, S) ((int64)(V) << (64-(S)) >> (64-(S))) // TODO: fix (currently depending on implementation)
 
 static bool exec(){
+	printf("execute @ 0x%08lx\n", (long)NIP); // for debug/test
 	instruction *inst = read_mem_inst(NIP);
 	bool invalid = false;
 
@@ -1320,40 +1321,39 @@ static bool exec(){
 							if(rc) update_CR(0, R[ra], 0);
 							break;
 						}
+				}
 
-
-					default:
-						xo = (xo<<1) | (sh&1);
-						int rb = sh>>1;
-						switch(xo){
-							case 8:
-								// Rotate Left Doubleword then Clear Left
-								{
-									int n = R[rb] & 0x3f;
-									int64 r = rot(R[rs], n, 64);
-									int b = rot(mb, 5, 6);
-									int64 m = mk_mask(b, 63);
-									R[ra] = r&m;
-									if(rc) update_CR(0, R[ra], 0);
-									break;
-								}
-							case 9:
-								// Rotate Left Doubleword then Clear Right
-								{
-									int n = R[rb] & 0x3f;
-									int64 r = rot(R[rs], n, 64);
-									int e = rot(me, 5, 6);
-									int64 m = mk_mask(0, e);
-									R[ra] = r&m;
-									if(rc) update_CR(0, R[ra], 0);
-									break;
-								}
-
-							default:
-								invalid = true;
+				// MDS_FORM
+				int rb = sh>>1;
+				switch(xo<<(sh&1)){
+					case 8:
+						// Rotate Left Doubleword then Clear Left
+						{
+							int n = R[rb] & 0x3f;
+							int64 r = rot(R[rs], n, 64);
+							int b = rot(mb, 5, 6);
+							int64 m = mk_mask(b, 63);
+							R[ra] = r&m;
+							if(rc) update_CR(0, R[ra], 0);
+							break;
+						}
+					case 9:
+						// Rotate Left Doubleword then Clear Right
+						{
+							int n = R[rb] & 0x3f;
+							int64 r = rot(R[rs], n, 64);
+							int e = rot(me, 5, 6);
+							int64 m = mk_mask(0, e);
+							R[ra] = r&m;
+							if(rc) update_CR(0, R[ra], 0);
+							break;
 						}
 
+					default:
+						invalid = true;
 				}
+
+
 			}
 
 		default:

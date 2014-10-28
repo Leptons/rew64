@@ -37,14 +37,125 @@ instruction *decode_inst(word val){
 		return st_x_form_inst(inst, val);
 	} else if(DS_FORM_INST_L <= opcd && opcd < DS_FORM_INST_R){ // DS_FORM
 		return st_ds_form_inst(inst, val);
-	} else if(M_FORM_INST_L <= opcd && opcd < M_FORM_INST_R){
+	} else if(M_FORM_INST_L <= opcd && opcd < M_FORM_INST_R){ // M_FORM
 		return st_m_form_inst(inst, val);
-	} else if(opcd == MD_FORM_INST){
+	} else if(opcd == MD_FORM_INST){ // MD_FORM
 		return st_md_form_inst(inst, val);
 	} else {
 		inst->opcd = 0;
 		return st_bad_inst(inst, val);
 	}
+}
+
+word mk_b_op(int opcd, int bo, int bi, int bd, int aa, int lk){
+	word op = 0;
+
+	SET_BIN_OPCD(op, opcd);
+	SET_BIN_BO(op, bo);
+    SET_BIN_BI(op, bi);
+    SET_BIN_BD(op, bd);
+    SET_BIN_AA(op, aa);
+    SET_BIN_LK(op, lk);
+
+	return op;
+}
+
+word mk_sc_op(int opcd, int lev, int aa){
+	word op = 0;
+
+	SET_BIN_OPCD(op, opcd);
+	SET_BIN_LEV(op, lev);
+	SET_BIN_AA(op, aa);
+
+	return op;
+}
+
+word mk_i_op(int opcd, int li, int aa, int lk){
+	word op = 0;
+
+	SET_BIN_OPCD(op, opcd);
+	SET_BIN_LI(op, li);
+	SET_BIN_AA(op, aa);
+	SET_BIN_LK(op, lk);
+
+	return op;
+}
+
+word mk_xl_op(int opcd, int bt, int ba, int bb, int xo, int lk){
+	word op = 0;
+
+	SET_BIN_OPCD(op, opcd);
+	SET_BIN_BT(op, bt);
+	SET_BIN_BA(op, ba);
+	SET_BIN_BB(op, bb);
+	SET_BIN_XL_XO(op, xo);
+	SET_BIN_LK(op, lk);
+
+	return op;
+}
+
+word mk_x_op(int opcd, int rt, int ra, int rb, int xo, int rc){
+	word op = 0;
+
+	SET_BIN_OPCD(op, opcd);
+	SET_BIN_RT(op, rt);
+	SET_BIN_RA(op, ra);
+	SET_BIN_RB(op, rb);
+	SET_BIN_X_XO(op, xo);
+	SET_BIN_RC(op, rc);
+
+	return op;
+}
+
+word mk_d_op(int opcd, int rt, int ra, int d){
+	word op = 0;
+
+	SET_BIN_OPCD(op, opcd);
+	SET_BIN_RT(op, rt);
+	SET_BIN_RA(op, ra);
+	SET_BIN_D(op, d);
+
+	return op;
+}
+
+word mk_ds_op(int opcd, int rt, int ra, int ds, int xo){
+	word op = 0;
+
+	SET_BIN_OPCD(op, opcd);
+	SET_BIN_RT(op, rt);
+	SET_BIN_RA(op, ra);
+	SET_BIN_DS(op, ds);
+	SET_BIN_DS_XO(op, xo);
+
+	return op;
+}
+
+word mk_m_op(int opcd, int rs, int ra, int rb, int mb, int me, int rc){
+	word op = 0;
+
+	SET_BIN_OPCD(op, opcd);
+	SET_BIN_RS(op, rs);
+	SET_BIN_RA(op, ra);
+	SET_BIN_RB(op, rb);
+	SET_BIN_MB(op, mb);
+	SET_BIN_ME(op, me);
+	SET_BIN_RC(op, rc);
+
+	return op;
+}
+
+word mk_md_op(int opcd, int rs, int ra, int sh, int mb, int xo, int rc){
+	word op = 0;
+
+	SET_BIN_OPCD(op, opcd);
+	SET_BIN_RS(op, rs);
+	SET_BIN_RA(op, ra);
+	SET_BIN_SH2(op, sh);
+	SET_BIN_MD_MB(op, mb);
+	SET_BIN_MD_XO(op, xo);
+	SET_BIN_RC(op, rc);
+
+	return op;
 }
 
 static instruction *st_b_form_inst(instruction *inst, word val){
